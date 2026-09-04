@@ -38,8 +38,9 @@ async def test_triage_creates_run_dir_and_returns_summary(cfg, temp_home: Path) 
         seen["run_dir"] = run_dir
         return RunSummary(kind=spec.kind, headline="ok", ok=True)
 
-    summary = await triage(cfg, build_sentry_spec(cfg, "APP-1"), run_fn=fake_run)
-    assert summary.ok and seen["run_dir"].parent == temp_home / ".tedsbot" / "runs"
+    summary, run_dir = await triage(cfg, build_sentry_spec(cfg, "APP-1"), run_fn=fake_run)
+    assert summary.ok and run_dir == seen["run_dir"]
+    assert run_dir.parent == temp_home / ".tedsbot" / "runs"
 
 
 def test_cli_exit_codes(tmp_path: Path, config_dict: dict, env_tokens: None, temp_home: Path,
@@ -59,3 +60,8 @@ def test_cli_exit_codes(tmp_path: Path, config_dict: dict, env_tokens: None, tem
 
     monkeypatch.setattr("tedsbot.commands.triage._run", passing)
     assert main(["-c", str(p), "triage", "sentry", "APP-9"]) == 0
+
+
+def test_cli_config_error_exits_2(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["-c", str(tmp_path / "absent.yaml"), "triage", "sentry", "APP-1"]) == 2
+    assert "config error" in capsys.readouterr().err

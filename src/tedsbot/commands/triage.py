@@ -27,13 +27,15 @@ def build_ticket_spec(cfg: Config, key: str) -> RunSpec:
                    tools=list(TRIAGE_TOOLS), run_id=key)
 
 
-async def triage(cfg: Config, spec: RunSpec, *, run_fn: RunFn | None = None, home: Path | None = None) -> RunSummary:
+async def triage(cfg: Config, spec: RunSpec, *, run_fn: RunFn | None = None,
+                 home: Path | None = None) -> tuple[RunSummary, Path]:
     run_dir = new_run_dir(spec.kind, spec.run_id, home)
-    return await (run_fn or _run)(cfg, spec, run_dir)
+    summary = await (run_fn or _run)(cfg, spec, run_dir)
+    return summary, run_dir
 
 
 def main_triage(cfg: Config, kind: str, target: str) -> int:
     spec = build_sentry_spec(cfg, target) if kind == "sentry" else build_ticket_spec(cfg, target)
-    summary = asyncio.run(triage(cfg, spec, run_fn=_run))
-    print(slack_line(summary, Path.home() / ".tedsbot" / "runs"))
+    summary, run_dir = asyncio.run(triage(cfg, spec, run_fn=_run))
+    print(slack_line(summary, run_dir))
     return 0 if summary.ok else 1
