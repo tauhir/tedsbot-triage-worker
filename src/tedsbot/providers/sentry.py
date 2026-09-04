@@ -93,6 +93,16 @@ class SentryErrorSource:
     def knowledge(self) -> str:
         return resources.files("tedsbot.providers.knowledge").joinpath("sentry.md").read_text()
 
+    def check_auth(self) -> tuple[bool, str]:
+        url = self._org_url("")
+        try:
+            resp = self._client.get(url)
+        except httpx.HTTPError as exc:
+            return False, f"{url} unreachable: {exc}"
+        if resp.status_code == 200:
+            return True, url
+        return False, f"{url} -> {resp.status_code}"
+
     def _org_url(self, tail: str) -> str:
         return f"{self.cfg.region_url}/api/0/organizations/{self.cfg.org}/{tail}"
 

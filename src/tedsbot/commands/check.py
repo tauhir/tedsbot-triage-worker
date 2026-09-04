@@ -29,6 +29,8 @@ class CheckReport:
 
 
 def _default_mcp_probe(config: dict) -> bool:
+    # Milestone 1 probes launch only; the JSON-RPC initialize handshake that
+    # would prove the server actually speaks MCP is deferred to milestone 2.
     # Three outcomes: the process exits and its return code says whether it
     # succeeded; it times out because a stdio server waiting on stdin has
     # proven it can launch (treated as reachable); or it never starts at all
@@ -89,6 +91,10 @@ def run_check(
     for provider in providers.values():
         server = provider.mcp_server()
         report.add(f"mcp:{server.name}", mcp_probe(server.config), " ".join([server.config["command"], *server.config.get("args", [])]))
+
+    if (errors := providers.get("errors")) is not None:
+        ok, detail = errors.check_auth()
+        report.add("sentry auth", ok, detail)
 
     report.add("gh auth", gh_probe(), "gh auth status")
 
