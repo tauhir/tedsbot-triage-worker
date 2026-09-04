@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from tedsbot.config import Config, expand_env, load_config
+from tedsbot.config import Config, PassConfig, PollConfig, expand_env, load_config
 from tedsbot.errors import ConfigError
 
 
@@ -85,3 +85,13 @@ def test_non_mapping_role_section_is_rejected(tmp_path: Path, config_dict: dict,
     config_dict["errors"] = "sentry"
     with pytest.raises(ConfigError, match="errors must be a mapping"):
         load_config(_write(tmp_path, config_dict))
+
+
+def test_new_error_first_seen_defaults_when_pass_is_overridden() -> None:
+    poll = PollConfig(new_error=PassConfig(min_times_seen=5))
+    assert poll.new_error.first_seen == "-30m"
+    assert poll.new_error.min_times_seen == 5
+
+
+def test_explicit_new_error_first_seen_is_kept() -> None:
+    assert PollConfig(new_error=PassConfig(first_seen="-6h")).new_error.first_seen == "-6h"

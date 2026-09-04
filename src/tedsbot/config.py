@@ -8,7 +8,14 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 
 from tedsbot.errors import ConfigError
 
@@ -58,13 +65,22 @@ class PassConfig(_Strict):
 
 
 class PollConfig(_Strict):
-    new_error: PassConfig = Field(default_factory=lambda: PassConfig(first_seen="-30m"))
+    new_error: PassConfig = Field(default_factory=PassConfig)
     escalating: PassConfig = Field(default_factory=PassConfig)
     performance: PassConfig = Field(default_factory=lambda: PassConfig(min_times_seen=10))
     chronic: PassConfig = Field(default_factory=PassConfig)
     levels: list[str] = Field(default_factory=lambda: ["error", "fatal"])
     stats_period: str = "14d"
     max_issues_per_cycle: int = 5
+
+    @model_validator(mode="after")
+    def _default_new_error_window(self) -> PollConfig:
+        # first_seen is only meaningful to the new-error pass, so its default
+        # lives here: PassConfig is shared with passes that must not carry one,
+        # and an unset window would render as the literal "firstSeen:None".
+        if self.new_error.first_seen is None:
+            self.new_error.first_seen = "-30m"
+        return self
 
 
 class ErrorsConfig(_Strict):

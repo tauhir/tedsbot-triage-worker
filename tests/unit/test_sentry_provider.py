@@ -49,6 +49,11 @@ def test_build_passes_default_order_and_queries() -> None:
     assert perf.env_mode == "check" and "timesSeen:>=10" in perf.query
 
 
+def test_build_passes_omits_disabled_new_error() -> None:
+    passes = build_passes(PollConfig(new_error=PassConfig(enabled=False)))
+    assert "new-error" not in [p.label for p in passes]
+
+
 def test_build_passes_respects_enabled_flags() -> None:
     passes = build_passes(PollConfig(escalating=PassConfig(enabled=False), chronic=PassConfig(enabled=False)))
     assert [p.label for p in passes] == ["new-error", "performance"]

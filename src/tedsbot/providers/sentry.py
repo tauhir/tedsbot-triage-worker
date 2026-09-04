@@ -30,15 +30,15 @@ class SentryPass:
 
 def build_passes(poll: PollConfig) -> list[SentryPass]:
     levels = ",".join(poll.levels)
-    out = [
-        SentryPass(
+    out: list[SentryPass] = []
+    if poll.new_error.enabled:
+        out.append(SentryPass(
             "new-error",
             f"is:unresolved firstSeen:{poll.new_error.first_seen} "
             f"timesSeen:>={poll.new_error.min_times_seen} level:[{levels}]",
             "new",
             "param",
-        )
-    ]
+        ))
     if poll.escalating.enabled:
         out.append(SentryPass(
             "escalating",
