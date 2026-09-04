@@ -153,3 +153,9 @@ def test_already_ticketed_uses_ticket_search() -> None:
     src = SentryErrorSource(_cfg())
     assert src.already_ticketed("APP-1", FakeTickets()) is True
     assert src.already_ticketed("APP-2", FakeTickets()) is False
+
+
+def test_close_releases_the_http_client() -> None:
+    src = SentryErrorSource(_cfg())
+    src.close()
+    assert src._client.is_closed

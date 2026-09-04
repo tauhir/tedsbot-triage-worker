@@ -1,0 +1,106 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate
+      connection:
+      - keep-alive
+      host:
+      - us.sentry.io
+    method: GET
+    uri: https://us.sentry.io/api/0/organizations/example-org/issues/?project=123&query=is%3Aunresolved+firstSeen%3A-30m+timesSeen%3A%3E%3D3+level%3A%5Berror%2Cfatal%5D&sort=new&statsPeriod=14d&limit=25&environment=production
+  response:
+    body:
+      string: '[]'
+    headers:
+      content-type:
+      - application/json
+      date:
+      - Fri, 04 Sep 2026 14:00:06 GMT
+    status:
+      code: 200
+      message: OK
+- request:
+    body: ''
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate
+      connection:
+      - keep-alive
+      host:
+      - us.sentry.io
+    method: GET
+    uri: https://us.sentry.io/api/0/organizations/example-org/issues/?project=123&query=is%3Aunresolved+is%3Aescalating+timesSeen%3A%3E%3D3+level%3A%5Berror%2Cfatal%5D&sort=freq&statsPeriod=14d&limit=25&environment=production
+  response:
+    body:
+      string: '[]'
+    headers:
+      content-type:
+      - application/json
+      date:
+      - Fri, 04 Sep 2026 14:00:06 GMT
+    status:
+      code: 200
+      message: OK
+- request:
+    body: ''
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate
+      connection:
+      - keep-alive
+      host:
+      - us.sentry.io
+    method: GET
+    uri: https://us.sentry.io/api/0/organizations/example-org/issues/?project=123&query=is%3Aunresolved+issue.category%3A%5Bdb_query%2Chttp_client%2Cfrontend%2Cmobile%2Cmetric%5D+timesSeen%3A%3E%3D10&sort=freq&statsPeriod=14d&limit=25
+  response:
+    body:
+      string: '[]'
+    headers:
+      content-type:
+      - application/json
+      date:
+      - Fri, 04 Sep 2026 14:00:07 GMT
+    status:
+      code: 200
+      message: OK
+- request:
+    body: ''
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate
+      connection:
+      - keep-alive
+      host:
+      - us.sentry.io
+    method: GET
+    uri: https://us.sentry.io/api/0/organizations/example-org/issues/?project=123&query=is%3Aunresolved+timesSeen%3A%3E%3D3+level%3A%5Berror%2Cfatal%5D&sort=freq&statsPeriod=14d&limit=25&environment=production
+  response:
+    body:
+      string: '[{"id":"7680863232","shortId":"MARTIALQA-1KH","title":"ExampleError:
+        example failure 1","culprit":"example.module.function_1","permalink":"https://example-org.sentry.io/issues/7680863232/","level":"error","status":"unresolved","substatus":"ongoing","platform":"python","project":{"id":"123","name":"example-app","slug":"example-app","platform":"python-django"},"type":"default","metadata":{"title":"example-title-1"},"issueType":"error","issueCategory":"error","priority":"high","isUnhandled":false,"count":"18","userCount":1,"firstSeen":"2026-08-26T08:34:35Z","lastSeen":"2026-08-26T08:44:54Z"},{"id":"7490088762","shortId":"MARTIALQA-1BE","title":"ExampleError:
+        example failure 2","culprit":"example.module.function_2","permalink":"https://example-org.sentry.io/issues/7490088762/","level":"fatal","status":"unresolved","substatus":"ongoing","platform":"python","project":{"id":"123","name":"example-app","slug":"example-app","platform":"python-django"},"type":"error","metadata":{"value":"example-value-2","type":"example-type-2","filename":"example-filename-2","function":"example-function-2","title":null},"issueType":"error","issueCategory":"error","priority":"high","isUnhandled":false,"count":"16","userCount":0,"firstSeen":"2026-08-23T03:12:17Z","lastSeen":"2026-09-03T03:07:14Z"},{"id":"6091491957","shortId":"MARTIALQA-63","title":"ExampleError:
+        example failure 3","culprit":"example.module.function_3","permalink":"https://example-org.sentry.io/issues/6091491957/","level":"error","status":"unresolved","substatus":"ongoing","platform":"python","project":{"id":"123","name":"example-app","slug":"example-app","platform":"python-django"},"type":"default","metadata":{"title":"example-title-3"},"issueType":"error","issueCategory":"error","priority":"high","isUnhandled":false,"count":"11","userCount":0,"firstSeen":"2026-08-25T03:04:32Z","lastSeen":"2026-08-27T03:04:58Z"},{"id":"7689606128","shortId":"MARTIALQA-1KQ","title":"ExampleError:
+        example failure 4","culprit":"example.module.function_4","permalink":"https://example-org.sentry.io/issues/7689606128/","level":"error","status":"unresolved","substatus":"ongoing","platform":"python","project":{"id":"123","name":"example-app","slug":"example-app","platform":"python-django"},"type":"default","metadata":{"title":"example-title-4"},"issueType":"error","issueCategory":"error","priority":"high","isUnhandled":false,"count":"4","userCount":0,"firstSeen":"2026-08-24T14:58:14Z","lastSeen":"2026-08-26T08:34:19Z"},{"id":"7689606093","shortId":"MARTIALQA-1KP","title":"ExampleError:
+        example failure 5","culprit":"example.module.function_5","permalink":"https://example-org.sentry.io/issues/7689606093/","level":"error","status":"unresolved","substatus":"ongoing","platform":"python","project":{"id":"123","name":"example-app","slug":"example-app","platform":"python-django"},"type":"default","metadata":{"title":"example-title-5"},"issueType":"error","issueCategory":"error","priority":"high","isUnhandled":false,"count":"4","userCount":0,"firstSeen":"2026-08-24T14:58:14Z","lastSeen":"2026-08-26T08:34:19Z"},{"id":"7285778206","shortId":"MARTIALQA-152","title":"ExampleError:
+        example failure 6","culprit":"example.module.function_6","permalink":"https://example-org.sentry.io/issues/7285778206/","level":"error","status":"unresolved","substatus":"ongoing","platform":"python","project":{"id":"123","name":"example-app","slug":"example-app","platform":"python-django"},"type":"error","metadata":{"value":"example-value-6","type":"example-type-6","filename":"example-filename-6","function":"example-function-6","title":null},"issueType":"error","issueCategory":"error","priority":"high","isUnhandled":false,"count":"3","userCount":0,"firstSeen":"2026-09-03T07:00:00Z","lastSeen":"2026-09-04T06:48:00Z"}]'
+    headers:
+      content-type:
+      - application/json
+      date:
+      - Fri, 04 Sep 2026 14:00:09 GMT
+      x-hits:
+      - '6'
+    status:
+      code: 200
+      message: OK
+version: 1

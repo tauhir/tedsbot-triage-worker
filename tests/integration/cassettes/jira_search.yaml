@@ -1,0 +1,115 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate
+      connection:
+      - keep-alive
+      host:
+      - api.atlassian.com
+    method: GET
+    uri: https://api.atlassian.com/ex/jira/cid/rest/api/3/search/jql?jql=project+%3D+%22APP%22+AND+text+~+%22triage%22&fields=summary%2Cstatus&maxResults=50
+  response:
+    body:
+      string: '{"issues":[{"id":"12018","key":"APP-410","fields":{"summary":"Example
+        ticket 1","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10125","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"Dev
+        Team Review","id":"10125","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}}}},{"id":"11998","key":"APP-390","fields":{"summary":"Example ticket
+        2","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10132","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"Won''t
+        Do","id":"10132","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/3","id":3,"key":"done","colorName":"green","name":"Done"}}}},{"id":"11963","key":"APP-386","fields":{"summary":"Example
+        ticket 3","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10125","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"Dev
+        Team Review","id":"10125","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}}}},{"id":"11910","key":"APP-342","fields":{"summary":"Example ticket
+        4","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10124","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"To
+        Triage","id":"10124","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}}}},{"id":"11892","key":"APP-328","fields":{"summary":"Example ticket
+        5","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10125","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"Dev
+        Team Review","id":"10125","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}}}},{"id":"11889","key":"APP-325","fields":{"summary":"Example ticket
+        6","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10125","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"Dev
+        Team Review","id":"10125","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}}}},{"id":"11881","key":"APP-317","fields":{"summary":"Example ticket
+        7","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10124","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"To
+        Triage","id":"10124","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}}}},{"id":"11880","key":"APP-316","fields":{"summary":"Example ticket
+        8","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10124","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"To
+        Triage","id":"10124","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}}}},{"id":"11810","key":"APP-293","fields":{"summary":"Example ticket
+        9","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10007","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"Done","id":"10007","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/3","id":3,"key":"done","colorName":"green","name":"Done"}}}},{"id":"11731","key":"APP-282","fields":{"summary":"Example
+        ticket 10","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10125","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"Dev
+        Team Review","id":"10125","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}}}},{"id":"11729","key":"APP-280","fields":{"summary":"Example ticket
+        11","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10125","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"Dev
+        Team Review","id":"10125","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}}}},{"id":"11727","key":"APP-278","fields":{"summary":"Example ticket
+        12","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10007","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"Done","id":"10007","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/3","id":3,"key":"done","colorName":"green","name":"Done"}}}},{"id":"11726","key":"APP-277","fields":{"summary":"Example
+        ticket 13","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10125","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"Dev
+        Team Review","id":"10125","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}}}},{"id":"11722","key":"APP-274","fields":{"summary":"Example ticket
+        14","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10132","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"Won''t
+        Do","id":"10132","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/3","id":3,"key":"done","colorName":"green","name":"Done"}}}},{"id":"11716","key":"APP-268","fields":{"summary":"Example
+        ticket 15","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10170","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"Approved
+        For Fix","id":"10170","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}}}},{"id":"11689","key":"APP-254","fields":{"summary":"Example ticket
+        16","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10125","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"Dev
+        Team Review","id":"10125","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}}}},{"id":"11688","key":"APP-253","fields":{"summary":"Example ticket
+        17","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10170","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"Approved
+        For Fix","id":"10170","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}}}},{"id":"11687","key":"APP-252","fields":{"summary":"Example ticket
+        18","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10170","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"Approved
+        For Fix","id":"10170","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}}}},{"id":"11678","key":"APP-249","fields":{"summary":"Example ticket
+        19","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10205","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"Waiting
+        for CI","id":"10205","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}}}},{"id":"11671","key":"APP-244","fields":{"summary":"Example ticket
+        20","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10203","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"Code
+        Review","id":"10203","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}}}},{"id":"11669","key":"APP-243","fields":{"summary":"Example ticket
+        21","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10203","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"Code
+        Review","id":"10203","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}}}},{"id":"11537","key":"APP-212","fields":{"summary":"Example ticket
+        22","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10126","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"Ready
+        For QA","id":"10126","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}}}},{"id":"11494","key":"APP-203","fields":{"summary":"Example ticket
+        23","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10125","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"Dev
+        Team Review","id":"10125","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}}}},{"id":"11490","key":"APP-199","fields":{"summary":"Example ticket
+        24","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10132","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"Won''t
+        Do","id":"10132","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/3","id":3,"key":"done","colorName":"green","name":"Done"}}}},{"id":"11484","key":"APP-193","fields":{"summary":"Example
+        ticket 25","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10126","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"Ready
+        For QA","id":"10126","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}}}},{"id":"11477","key":"APP-186","fields":{"summary":"Example ticket
+        26","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10124","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"To
+        Triage","id":"10124","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}}}},{"id":"11457","key":"APP-173","fields":{"summary":"Example ticket
+        27","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10007","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"Done","id":"10007","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/3","id":3,"key":"done","colorName":"green","name":"Done"}}}},{"id":"11448","key":"APP-166","fields":{"summary":"Example
+        ticket 28","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10124","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"To
+        Triage","id":"10124","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}}}},{"id":"11324","key":"APP-144","fields":{"summary":"Example ticket
+        29","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10007","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"Done","id":"10007","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/3","id":3,"key":"done","colorName":"green","name":"Done"}}}},{"id":"11251","key":"APP-97","fields":{"summary":"Example
+        ticket 30","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10124","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"To
+        Triage","id":"10124","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}}}},{"id":"11249","key":"APP-96","fields":{"summary":"Example ticket 31","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10124","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"To
+        Triage","id":"10124","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}}}},{"id":"11201","key":"APP-88","fields":{"summary":"Example ticket 32","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10204","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"QA
+        Paused","id":"10204","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}}}},{"id":"11176","key":"APP-83","fields":{"summary":"Example ticket 33","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/10134","description":"","iconUrl":"https://api.atlassian.com/ex/jira/cid/","name":"Needs
+        Input","id":"10134","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}}}},{"id":"11174","key":"APP-81","fields":{"summary":"Example ticket
+        34","status":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/status/3","description":"This
+        issue is being actively worked on at the moment by the assignee.","iconUrl":"https://example.atlassian.net/images/icons/statuses/inprogress.png","name":"In
+        Progress","id":"3","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}}}}],"isLast":true}'
+    headers:
+      content-type:
+      - application/json;charset=UTF-8
+      date:
+      - Fri, 04 Sep 2026 14:00:04 GMT
+    status:
+      code: 200
+      message: OK
+version: 1

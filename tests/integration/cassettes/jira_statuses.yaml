@@ -1,0 +1,146 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate
+      connection:
+      - keep-alive
+      host:
+      - api.atlassian.com
+    method: GET
+    uri: https://api.atlassian.com/ex/jira/cid/rest/api/3/project/APP/statuses
+  response:
+    body:
+      string: '[{"id":"10006","name":"Task","subtask":false,"statuses":[{"name":"Input
+        Received","id":"10168","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Backlog","id":"10082","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Spec In Progress","id":"10086","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"QA Paused","id":"10204","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Notify Customers","id":"10131","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Blocked","id":"10169","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Ready For QA","id":"10126","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"To Triage","id":"10124","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Ready for Deploy","id":"10128","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Approved For Fix","id":"10170","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"In Progress","id":"3","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"QA In Progress","id":"10127","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Code Review","id":"10203","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Ready for Development","id":"10085","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Won''t Do","id":"10132","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/3","id":3,"key":"done","colorName":"green","name":"Done"}},{"name":"Waiting
+        for CI","id":"10205","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Ready For PT","id":"10129","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Done","id":"10007","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/3","id":3,"key":"done","colorName":"green","name":"Done"}},{"name":"Ready
+        for Spec","id":"10084","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Dev Team Review","id":"10125","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Needs Input","id":"10134","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Requires Revert","id":"10133","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"PT In Progress","id":"10130","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}}]},{"id":"10007","name":"Sub-task","subtask":true,"statuses":[{"name":"Input
+        Received","id":"10168","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Backlog","id":"10082","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Spec In Progress","id":"10086","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"QA Paused","id":"10204","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Notify Customers","id":"10131","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Blocked","id":"10169","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Ready For QA","id":"10126","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"To Triage","id":"10124","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Ready for Deploy","id":"10128","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Approved For Fix","id":"10170","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"In Progress","id":"3","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"QA In Progress","id":"10127","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Code Review","id":"10203","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Ready for Development","id":"10085","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Won''t Do","id":"10132","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/3","id":3,"key":"done","colorName":"green","name":"Done"}},{"name":"Waiting
+        for CI","id":"10205","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Ready For PT","id":"10129","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Done","id":"10007","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/3","id":3,"key":"done","colorName":"green","name":"Done"}},{"name":"Ready
+        for Spec","id":"10084","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Dev Team Review","id":"10125","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Needs Input","id":"10134","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Requires Revert","id":"10133","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"PT In Progress","id":"10130","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}}]},{"id":"10004","name":"Story","subtask":false,"statuses":[{"name":"Input
+        Received","id":"10168","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Backlog","id":"10082","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Spec In Progress","id":"10086","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"QA Paused","id":"10204","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Notify Customers","id":"10131","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Blocked","id":"10169","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Ready For QA","id":"10126","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"To Triage","id":"10124","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Ready for Deploy","id":"10128","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Approved For Fix","id":"10170","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"In Progress","id":"3","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"QA In Progress","id":"10127","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Code Review","id":"10203","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Ready for Development","id":"10085","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Won''t Do","id":"10132","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/3","id":3,"key":"done","colorName":"green","name":"Done"}},{"name":"Waiting
+        for CI","id":"10205","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Ready For PT","id":"10129","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Done","id":"10007","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/3","id":3,"key":"done","colorName":"green","name":"Done"}},{"name":"Ready
+        for Spec","id":"10084","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Dev Team Review","id":"10125","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Needs Input","id":"10134","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Requires Revert","id":"10133","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"PT In Progress","id":"10130","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}}]},{"id":"10009","name":"Bug","subtask":false,"statuses":[{"name":"Input
+        Received","id":"10168","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Backlog","id":"10082","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Spec In Progress","id":"10086","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"QA Paused","id":"10204","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Notify Customers","id":"10131","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Blocked","id":"10169","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Ready For QA","id":"10126","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"To Triage","id":"10124","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Ready for Deploy","id":"10128","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Approved For Fix","id":"10170","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"In Progress","id":"3","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"QA In Progress","id":"10127","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Code Review","id":"10203","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Ready for Development","id":"10085","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Won''t Do","id":"10132","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/3","id":3,"key":"done","colorName":"green","name":"Done"}},{"name":"Waiting
+        for CI","id":"10205","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Ready For PT","id":"10129","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Done","id":"10007","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/3","id":3,"key":"done","colorName":"green","name":"Done"}},{"name":"Ready
+        for Spec","id":"10084","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Dev Team Review","id":"10125","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Needs Input","id":"10134","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Requires Revert","id":"10133","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"PT In Progress","id":"10130","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}}]},{"id":"10000","name":"Epic","subtask":false,"statuses":[{"name":"Input
+        Received","id":"10168","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Backlog","id":"10082","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Spec In Progress","id":"10086","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"QA Paused","id":"10204","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Notify Customers","id":"10131","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Blocked","id":"10169","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Ready For QA","id":"10126","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"To Triage","id":"10124","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Ready for Deploy","id":"10128","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Approved For Fix","id":"10170","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"In Progress","id":"3","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"QA In Progress","id":"10127","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Code Review","id":"10203","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Ready for Development","id":"10085","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Won''t Do","id":"10132","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/3","id":3,"key":"done","colorName":"green","name":"Done"}},{"name":"Waiting
+        for CI","id":"10205","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Ready For PT","id":"10129","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Done","id":"10007","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/3","id":3,"key":"done","colorName":"green","name":"Done"}},{"name":"Ready
+        for Spec","id":"10084","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Dev Team Review","id":"10125","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/2","id":2,"key":"new","colorName":"blue-gray","name":"To
+        Do"}},{"name":"Needs Input","id":"10134","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"Requires Revert","id":"10133","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}},{"name":"PT In Progress","id":"10130","statusCategory":{"self":"https://api.atlassian.com/ex/jira/cid/rest/api/3/statuscategory/4","id":4,"key":"indeterminate","colorName":"yellow","name":"In
+        Progress"}}]}]'
+    headers:
+      content-type:
+      - application/json;charset=UTF-8
+      date:
+      - Fri, 04 Sep 2026 14:00:03 GMT
+    status:
+      code: 200
+      message: OK
+version: 1

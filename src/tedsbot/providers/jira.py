@@ -47,6 +47,10 @@ class JiraTicketing:
             timeout=30,
         )
 
+    def close(self) -> None:
+        """Release the HTTP connection pool; long-lived callers own the lifetime."""
+        self._client.close()
+
     def mcp_server(self) -> McpServer:
         return McpServer(
             name="atlassian",

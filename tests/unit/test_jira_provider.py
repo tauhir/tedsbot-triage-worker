@@ -149,3 +149,9 @@ def test_rest_client_targets_gateway_with_bearer() -> None:
     request = route.calls[0].request
     assert str(request.url).startswith("https://api.atlassian.com/ex/jira/cid/rest/api/3/")
     assert request.headers["Authorization"] == "Bearer tok"
+
+
+def test_close_releases_the_http_client() -> None:
+    tickets = JiraTicketing(_cfg())
+    tickets.close()
+    assert tickets._client.is_closed
