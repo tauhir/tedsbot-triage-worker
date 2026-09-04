@@ -10,6 +10,14 @@ import pytest
 pytestmark = pytest.mark.e2e
 
 
+def _required_env(name: str) -> str:
+    """Skip rather than error when a run-specific variable is absent."""
+    value = os.environ.get(name)
+    if not value:
+        pytest.skip(f"{name} not set")
+    return value
+
+
 def _runs_dir() -> Path:
     return Path.home() / ".tedsbot" / "runs"
 
@@ -32,8 +40,8 @@ def _new_run_dir(before: set[Path]) -> Path:
 
 
 def test_triage_sentry_lands_ticket_and_summary() -> None:
-    config = os.environ["TEDSBOT_E2E_CONFIG"]
-    issue = os.environ["TEDSBOT_E2E_SENTRY_ISSUE"]
+    config = _required_env("TEDSBOT_E2E_CONFIG")
+    issue = _required_env("TEDSBOT_E2E_SENTRY_ISSUE")
     before = _snapshot()
     proc = subprocess.run(["uv", "run", "tedsbot", "-c", config, "triage", "sentry", issue],
                           capture_output=True, text=True, check=False)
@@ -46,8 +54,8 @@ def test_triage_sentry_lands_ticket_and_summary() -> None:
 
 
 def test_triage_ticket_comments_and_summary() -> None:
-    config = os.environ["TEDSBOT_E2E_CONFIG"]
-    key = os.environ["TEDSBOT_E2E_TICKET"]
+    config = _required_env("TEDSBOT_E2E_CONFIG")
+    key = _required_env("TEDSBOT_E2E_TICKET")
     before = _snapshot()
     proc = subprocess.run(["uv", "run", "tedsbot", "-c", config, "triage", "ticket", key],
                           capture_output=True, text=True, check=False)
