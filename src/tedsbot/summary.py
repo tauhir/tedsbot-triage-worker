@@ -23,12 +23,12 @@ class RunSummary(BaseModel):
     ok: bool
 
 
-def read_summary(path: Path, kind: str, fallback_text: str) -> RunSummary:
+def read_summary(path: Path, kind: RunKind, fallback_text: str) -> RunSummary:
     try:
         data = json.loads(path.read_text())
         return RunSummary.model_validate(data)
     except (OSError, ValueError, ValidationError):
-        return RunSummary(kind=kind, headline=(fallback_text or "no output")[:200], ok=False)  # type: ignore[arg-type]
+        return RunSummary(kind=kind, headline=(fallback_text or "no output")[:200], ok=False)
 
 
 def slack_line(s: RunSummary, run_dir: Path) -> str:

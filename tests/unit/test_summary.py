@@ -28,6 +28,13 @@ def test_invalid_json_falls_back(tmp_path: Path) -> None:
     assert s.ok is False and len(s.headline) == 200
 
 
+def test_schema_invalid_json_falls_back(tmp_path: Path) -> None:
+    p = tmp_path / "summary.json"
+    p.write_text(json.dumps({"kind": "triage_sentry", "recommendation": "X", "headline": "h", "ok": True}))
+    s = read_summary(p, "triage_sentry", "agent text")
+    assert s.ok is False and s.headline.startswith("agent text")
+
+
 def test_slack_line_for_success(tmp_path: Path) -> None:
     s = RunSummary(kind="triage_sentry", ticket="APP-1", ticket_url="https://j/APP-1",
                    recommendation="🟡", status=None, pr_url=None, headline="race in save", ok=True)
@@ -35,7 +42,7 @@ def test_slack_line_for_success(tmp_path: Path) -> None:
 
 
 def test_slack_line_for_failure_has_warning_and_run_dir(tmp_path: Path) -> None:
-    s = RunSummary(kind="fix", ticket="APP-2", ticket_url=None, recommendation=None,
+    s = RunSummary(kind="triage_ticket", ticket="APP-2", ticket_url=None, recommendation=None,
                    status=None, pr_url=None, headline="agent died", ok=False)
     line = slack_line(s, tmp_path)
-    assert line.startswith("⚠️ fix APP-2 — agent died") and str(tmp_path) in line
+    assert line.startswith("⚠️ triage ticket APP-2 — agent died") and str(tmp_path) in line
