@@ -40,6 +40,16 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _dispatch(ns: argparse.Namespace) -> int:
-    # Command modules are wired in later tasks; unknown commands report clearly.
+    from pathlib import Path
+
+    config_path = Path(ns.config)
+    if ns.command == "check":
+        from tedsbot.commands.check import run_check
+
+        report = run_check(config_path)
+        for name, ok, detail in report.results:
+            print(f"[{'ok' if ok else 'FAIL'}] {name} — {detail}")
+        return 0 if report.ok else 1
+    # Remaining command modules are wired in later tasks; unknown commands report clearly.
     print(f"{ns.command}: not implemented yet", file=sys.stderr)
     return 1
