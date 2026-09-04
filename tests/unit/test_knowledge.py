@@ -32,3 +32,11 @@ def test_size_warning(tmp_path: Path) -> None:
 def test_extra_sections_come_last(tmp_path: Path) -> None:
     block = assemble_knowledge([], tmp_path, warn_kb=64, extra_sections=["## Project CLAUDE.md\nrules"])
     assert block.text.rstrip().endswith("rules")
+
+
+def test_unreadable_consumer_file_is_skipped_with_warning(tmp_path: Path) -> None:
+    (tmp_path / "good.md").write_text("good content\n")
+    (tmp_path / "bad.md").write_bytes(b"\xff\xfe not utf-8")
+    block = assemble_knowledge([], tmp_path, warn_kb=64)
+    assert "good content" in block.text
+    assert any("bad.md" in w and "skipped" in w for w in block.warnings)

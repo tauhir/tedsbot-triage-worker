@@ -34,7 +34,15 @@ def _consumer_sections(consumer_dir: Path | None, warnings: list[str]) -> list[s
     if not consumer_dir.is_dir():
         warnings.append(f"knowledge_dir {consumer_dir} does not exist; continuing without it")
         return []
-    return [_section(p.stem, p.read_text()) for p in sorted(consumer_dir.glob("*.md"))]
+    sections: list[str] = []
+    for p in sorted(consumer_dir.glob("*.md")):
+        try:
+            body = p.read_text()
+        except (OSError, UnicodeDecodeError) as exc:
+            warnings.append(f"knowledge file {p} skipped: {exc}")
+            continue
+        sections.append(_section(p.stem, body))
+    return sections
 
 
 def assemble_knowledge(
