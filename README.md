@@ -44,9 +44,9 @@ provider tools. Every run writes `~/.tedsbot/runs/<id>/summary.json`,
 - A local checkout of the repository you want triaged, with full history (`git fetch --unshallow` if it was a shallow clone)
 
 ### 2. Install
-    uv tool install tedsbot-triage-worker
-or from a clone:
     git clone https://github.com/tauhir/tedsbot-triage-worker && cd tedsbot-triage-worker && uv sync
+Once published to PyPI, also:
+    uv tool install tedsbot-triage-worker
 
 ### 3. Credentials
 Export these in the shell (or the service unit) that runs tedsbot.
@@ -93,6 +93,10 @@ Implement one of the protocols in `src/tedsbot/providers/base.py`, ship a knowle
 
 ## Operating
 Each run directory holds `prompt.md` (what the agent was told), `transcript.jsonl` (every message), `summary.json` (what the agent wrote), and `summary.resolved.json` (what Python accepted). A 🔴 means the agent could not establish a credible root cause; read the transcript before deciding whether the ticket needs more context or the knowledge directory needs a note.
+
+Run directories are never pruned, and a transcript holds whatever the agent read: full Sentry event payloads (which can carry request data and user identifiers) and the contents of source files. Treat `~/.tedsbot/runs` as sensitive, keep it on the worker host, and age it out yourself if your retention policy needs that.
+
+In milestone 1 the rule that triage never moves a ticket past `tickets.statuses.triage_target` is prompt-enforced only: nothing re-reads the ticket's status after the run to confirm the agent obeyed. The automated post-run status re-read arrives with the worker loop in milestone 2, so until then spot-check the transitions on early runs.
 
 ### Security notes
 The agent subprocess inherits the worker process's full environment — the
