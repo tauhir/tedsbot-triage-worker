@@ -1,6 +1,6 @@
 # ABOUTME: Shared pytest fixtures for the tedsbot test suite.
 # ABOUTME: Provides a temporary HOME and a minimal valid config dict.
-import os
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -18,9 +18,22 @@ def temp_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 def checkout(tmp_path: Path) -> Path:
     repo = tmp_path / "checkout"
     repo.mkdir()
-    os.system(f"git -C {repo} init -q -b main")
+    subprocess.run(
+        ["git", "-C", str(repo), "init", "-q", "-b", "main"],
+        check=True,
+        capture_output=True,
+    )
     (repo / "README.md").write_text("fixture\n")
-    os.system(f"git -C {repo} add -A && git -C {repo} -c user.email=t@t -c user.name=t commit -q -m init")
+    subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True, capture_output=True)
+    subprocess.run(
+        [
+            "git", "-C", str(repo),
+            "-c", "user.email=t@t", "-c", "user.name=t",
+            "commit", "-q", "-m", "init",
+        ],
+        check=True,
+        capture_output=True,
+    )
     return repo
 
 
