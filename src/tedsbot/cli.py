@@ -50,6 +50,17 @@ def _dispatch(ns: argparse.Namespace) -> int:
         for name, ok, detail in report.results:
             print(f"[{'ok' if ok else 'FAIL'}] {name} — {detail}")
         return 0 if report.ok else 1
+    if ns.command == "triage":
+        from tedsbot.commands.triage import main_triage
+        from tedsbot.config import load_config
+        from tedsbot.errors import ConfigError
+
+        try:
+            cfg = load_config(config_path)
+        except ConfigError as exc:
+            print(f"config error: {exc}", file=sys.stderr)
+            return 2
+        return main_triage(cfg, ns.triage_kind, ns.target)
     # Remaining command modules are wired in later tasks; unknown commands report clearly.
     print(f"{ns.command}: not implemented yet", file=sys.stderr)
     return 1
