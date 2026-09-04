@@ -9,7 +9,7 @@ replication-steps sections of your knowledge exactly.
 ## Run inputs
 
 - SENTRY_ISSUE: {{ sentry_issue }}
-- Write the run summary to: {{ summary_path }}
+- Record the run summary with the `submit_summary` tool (it writes the file for you).
 
 ## Facts for this project
 
@@ -28,7 +28,7 @@ replication-steps sections of your knowledge exactly.
 5. Write the analysis per triage-method step 6.
 6. Create a Bug in `{{ jira_project }}`: summary in plain language naming the page/feature and the symptom, exception type in trailing parentheses; description = the full analysis as markdown; label `{{ label_from_errors }}`; populate `{{ qa_notes_field }}` with the tier line plus a 2–3 sentence root-cause summary.
 7. Transition the ticket to **{{ status_triage_target }}**.
-8. Write the run summary as JSON to `{{ summary_path }}`:
+8. Record the run summary by calling the `submit_summary` tool with these fields (correct and resubmit if it reports a validation error):
 
 ```json
 {"kind": "triage_sentry", "ticket": "{{ jira_project }}-NNN", "ticket_url": "{{ jira_url }}/browse/{{ jira_project }}-NNN", "recommendation": "🟢", "status": null, "pr_url": null, "headline": "one-line root cause", "ok": true}
@@ -40,5 +40,5 @@ For a duplicate or a respected Won't Do, set recommendation "⚪", ticket to the
 
 - Honesty over confidence; 🔴 beats a wrong confident analysis.
 - Cite `file:line`, commit hashes, and event counts for every claim.
-- Do not edit, commit, or push any repository file. The only file you write is the summary.
+- Do not edit, commit, or push any repository file. You have no file-write permission; the summary goes through `submit_summary`.
 - Do not transition any ticket beyond **{{ status_triage_target }}**; approval is a human action.

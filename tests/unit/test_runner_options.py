@@ -38,9 +38,9 @@ def test_build_options_shape(cfg, tmp_path: Path) -> None:
     assert Path(options.cwd) == cfg.repo.path
     assert options.model == "claude-opus-5"
     assert options.max_turns == 60
-    assert set(options.mcp_servers) == {"sentry", "atlassian", "notify"}
-    assert f"Write(//{run_dir}/summary.json)" in options.allowed_tools
-    assert f"Write({run_dir}/summary.json)" not in options.allowed_tools  # single slash is project-relative
+    assert set(options.mcp_servers) == {"sentry", "atlassian", "notify", "run"}
+    assert not any(t.startswith("Write") for t in options.allowed_tools)
+    assert "mcp__run__submit_summary" in options.allowed_tools
     assert "mcp__sentry__*" in options.allowed_tools and "mcp__atlassian__*" in options.allowed_tools
     assert "mcp__notify__notify_slack" in options.allowed_tools
     assert "Edit" not in options.allowed_tools
@@ -48,7 +48,7 @@ def test_build_options_shape(cfg, tmp_path: Path) -> None:
     assert sp["type"] == "preset" and sp["preset"] == "claude_code"
     assert sp["exclude_dynamic_sections"] is True
     assert "## triage-method" in sp["append"] and "## Jira" in sp["append"]
-    assert "SENTRY_ISSUE: APP-1" in prompt and str(run_dir / "summary.json") in prompt
+    assert "SENTRY_ISSUE: APP-1" in prompt and "submit_summary" in prompt
 
 
 def test_build_options_passes_only_present_auth_env(cfg, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

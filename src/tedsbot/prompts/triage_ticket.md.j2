@@ -9,7 +9,7 @@ your knowledge exactly.
 ## Run inputs
 
 - TICKET_KEY: {{ ticket_key }}
-- Write the run summary to: {{ summary_path }}
+- Record the run summary with the `submit_summary` tool (it writes the file for you).
 
 ## Facts for this project
 
@@ -28,7 +28,7 @@ your knowledge exactly.
 5. Write the analysis as a ticket comment per triage-method step 6, with one change: its first line is the marker `[tedsbot]` followed by the recommendation tier on the same line, e.g. `[tedsbot] 🟡 needs review — ...`. The marker is how the worker recognises tickets it has already triaged.
 6. Populate `{{ qa_notes_field }}` with the tier line plus a 2–3 sentence root-cause summary.
 7. Transition to **{{ status_triage_target }}** if not already at or past it.
-8. Write the run summary as JSON to `{{ summary_path }}`:
+8. Record the run summary by calling the `submit_summary` tool with these fields (correct and resubmit if it reports a validation error):
 
 ```json
 {"kind": "triage_ticket", "ticket": "{{ ticket_key }}", "ticket_url": "{{ jira_url }}/browse/{{ ticket_key }}", "recommendation": "🟡", "status": null, "pr_url": null, "headline": "one-line root cause", "ok": true}
@@ -38,5 +38,5 @@ your knowledge exactly.
 
 - Honesty over confidence; 🔴 beats a wrong confident analysis.
 - Cite `file:line`, commit hashes, and Sentry links for every claim.
-- Do not edit, commit, or push any repository file. The only file you write is the summary.
+- Do not edit, commit, or push any repository file. You have no file-write permission; the summary goes through `submit_summary`.
 - Do not transition any ticket beyond **{{ status_triage_target }}**.

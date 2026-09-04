@@ -20,7 +20,7 @@ FACTS = {
 def test_triage_sentry_substitutes_facts_and_inputs() -> None:
     text = render_prompt("triage_sentry", FACTS, sentry_issue="APP-1", summary_path="/run/summary.json")
     assert "SENTRY_ISSUE: APP-1" in text
-    assert "/run/summary.json" in text
+    assert "submit_summary" in text and "/run/summary.json" not in text
     assert "example-org" in text and "Dev Team Review" in text and "sentry-triage" in text
     assert "NEVER modify repository code" in text
     assert '"kind": "triage_sentry"' in text

@@ -19,7 +19,13 @@ from tedsbot.config import Config
 from tedsbot.errors import ConfigError, ProviderError
 from tedsbot.knowledge import assemble_knowledge
 from tedsbot.prompts import render_prompt
-from tedsbot.summary import RunKind, RunSummary, read_summary, slack_line
+from tedsbot.summary import (
+    RunKind,
+    RunSummary,
+    build_summary_server,
+    read_summary,
+    slack_line,
+)
 
 log = logging.getLogger(__name__)
 
@@ -101,13 +107,16 @@ def build_options(cfg: Config, spec: RunSpec, run_dir: Path) -> tuple[ClaudeAgen
             config = {k: v for k, v in config.items() if k != "env"}
         mcp_servers[server.name] = config
         allowed.extend(server.allowed_tools)
-    # Permission rules read a single leading "/" as project-relative; an
-    # absolute filesystem path needs the "//" prefix.
-    allowed.append(f"Write(//{summary_path})")
+    # The agent has no file-write permission at all: the summary arrives through
+    # the in-process submit_summary tool, which validates it and writes the file.
+    run_server = build_summary_server(run_dir)
+    mcp_servers[run_server.name] = run_server.config
+    allowed.extend(run_server.allowed_tools)
 
     append = (
         f"{knowledge.text}\n\n## Run directory\n\n"
-        f"Your run directory is `{run_dir}`. The only file you may write is `{summary_path}`."
+        f"Your run directory is `{run_dir}`. You have no file-write permission; record the run "
+        f"summary by calling the `submit_summary` tool, which writes `{summary_path}` for you."
     )
     options = ClaudeAgentOptions(
         system_prompt={
@@ -174,7 +183,13 @@ async def run(cfg: Config, spec: RunSpec, run_dir: Path) -> RunSummary:
             ok=False,
         )
     else:
-        summary = read_summary(run_dir / "summary.json", spec.kind, final_text)
+        summary = read_summary(
+        run_dir / "summary.json",
+        spec.kind,
+        final_text,
+        ticket_pattern=rf"\b{re.escape(cfg.tickets.project)}-\d+\b",
+        ticket_url_base=f"{cfg.tickets.url}/browse",
+    )
         if failed:
             # query() can raise after the agent already wrote a summary.json that
             # looks complete (e.g. it crashed while posting to Jira after writing

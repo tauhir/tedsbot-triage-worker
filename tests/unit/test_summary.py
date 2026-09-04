@@ -25,7 +25,7 @@ def test_invalid_json_falls_back(tmp_path: Path) -> None:
     p = tmp_path / "summary.json"
     p.write_text("{not json")
     s = read_summary(p, "fix", "x" * 500)
-    assert s.ok is False and len(s.headline) == 200
+    assert s.ok is False and len(s.headline) <= 160 and s.headline.endswith("…")
 
 
 def test_schema_invalid_json_falls_back(tmp_path: Path) -> None:
@@ -46,3 +46,27 @@ def test_slack_line_for_failure_has_warning_and_run_dir(tmp_path: Path) -> None:
                    status=None, pr_url=None, headline="agent died", ok=False)
     line = slack_line(s, tmp_path)
     assert line.startswith("⚠️ triage ticket APP-2 — agent died") and str(tmp_path) in line
+
+
+def test_fallback_headline_is_first_meaningful_line_without_markdown(tmp_path: Path) -> None:
+    text = (
+        "Triage is complete through ticket creation; the final summary-file write is blocked.\n\n"
+        "## What I found — ⚪ not a code bug\n\n**APP-419** is `FieldError: ...`"
+    )
+    s = read_summary(tmp_path / "missing.json", "triage_sentry", text)
+    assert s.headline == "Triage is complete through ticket creation; the final summary-file write is blocked."
+
+
+def test_fallback_headline_skips_leading_markdown_and_cuts_at_word_boundary(tmp_path: Path) -> None:
+    text = "## What I found — ⚪ not a code bug\n\n**APP-419** is " + "word " * 60
+    s = read_summary(tmp_path / "missing.json", "triage_sentry", text)
+    assert s.headline.startswith("What I found — ⚪ not a code bug")
+    s2 = read_summary(tmp_path / "missing.json", "triage_sentry", "**APP-419** is " + "word " * 60)
+    assert len(s2.headline) <= 160 and s2.headline.endswith("…") and not s2.headline.endswith(" …")
+
+
+def test_fallback_recovers_ticket_key_from_text(tmp_path: Path) -> None:
+    text = "Landed APP-419 in Dev Team Review but could not write the summary."
+    s = read_summary(tmp_path / "missing.json", "triage_sentry", text, ticket_pattern=r"\bAPP-\d+\b", ticket_url_base="https://example.atlassian.net/browse")
+    assert s.ticket == "APP-419" and s.ticket_url == "https://example.atlassian.net/browse/APP-419"
+    assert s.recommendation is None and s.ok is False
