@@ -7,6 +7,7 @@ import subprocess
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 import httpx
 
@@ -70,22 +71,34 @@ def run_check(
                           capture_output=True, text=True, check=False)
     report.add("checkout", head.returncode == 0, f"{cfg.repo.path} on {head.stdout.strip() or '?'}")
 
-    providers = [registry.get_error_source(cfg.errors), registry.get_ticketing(cfg.tickets)]
+    roles: list[tuple[str, Any, Callable[[Any], Any]]] = [
+        ("errors", cfg.errors, registry.get_error_source),
+        ("tickets", cfg.tickets, registry.get_ticketing),
+    ]
     if cfg.logs is not None:
-        providers.append(registry.get_log_store(cfg.logs))
-    for provider in providers:
+        roles.append(("logs", cfg.logs, registry.get_log_store))
+    # A role naming a kind nobody registered is a finding, not a crash: the
+    # remaining checks still tell the operator what else is wrong.
+    providers: dict[str, Any] = {}
+    for role, section, getter in roles:
+        try:
+            providers[role] = getter(section)
+        except ConfigError as exc:
+            report.add(f"provider:{role}", False, str(exc))
+
+    for provider in providers.values():
         server = provider.mcp_server()
         report.add(f"mcp:{server.name}", mcp_probe(server.config), " ".join([server.config["command"], *server.config.get("args", [])]))
 
     report.add("gh auth", gh_probe(), "gh auth status")
 
-    tickets = providers[1]
-    wanted = list(cfg.tickets.statuses.model_dump().values())
-    try:
-        missing = tickets.statuses_exist(wanted)
-        report.add("ticket statuses", not missing, "all present" if not missing else f"missing: {', '.join(missing)}")
-    except (ProviderError, httpx.HTTPError) as exc:
-        report.add("ticket statuses", False, str(exc))
+    if (tickets := providers.get("tickets")) is not None:
+        wanted = list(cfg.tickets.statuses.model_dump().values())
+        try:
+            missing = tickets.statuses_exist(wanted)
+            report.add("ticket statuses", not missing, "all present" if not missing else f"missing: {', '.join(missing)}")
+        except (ProviderError, httpx.HTTPError) as exc:
+            report.add("ticket statuses", False, str(exc))
 
     has_auth = any(os.environ.get(k) for k in ("ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN"))
     report.add("claude auth", has_auth, "ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN")
