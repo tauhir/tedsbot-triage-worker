@@ -79,3 +79,9 @@ def test_knowledge_dir_resolved_relative_to_config(tmp_path: Path, config_dict: 
     config_dict["agent"]["knowledge_dir"] = "./docs"
     cfg = load_config(_write(tmp_path, config_dict))
     assert cfg.agent.knowledge_dir == (tmp_path / "docs").resolve()
+
+
+def test_non_mapping_role_section_is_rejected(tmp_path: Path, config_dict: dict, env_tokens: None) -> None:
+    config_dict["errors"] = "sentry"
+    with pytest.raises(ConfigError, match="errors must be a mapping"):
+        load_config(_write(tmp_path, config_dict))

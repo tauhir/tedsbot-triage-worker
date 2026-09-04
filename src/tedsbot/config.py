@@ -157,6 +157,8 @@ def _check_kinds(data: dict[str, Any]) -> None:
         section = data.get(role)
         if section is None:
             continue
+        if not isinstance(section, dict):
+            raise ConfigError(f"{role} must be a mapping")
         kind = section.get("kind")
         if kind not in kinds:
             raise ConfigError(f"{role}.kind must be one of {sorted(kinds)}, got {kind!r}")
