@@ -30,7 +30,10 @@ class SlackWebhookNotifier:
         self.notify_tool = notify_slack
 
     def post(self, text: str) -> None:
-        resp = httpx.post(self.cfg.url, json={"text": text}, timeout=15)
+        try:
+            resp = httpx.post(self.cfg.url, json={"text": text}, timeout=15)
+        except httpx.RequestError as exc:
+            raise ProviderError(f"slack webhook unreachable: {exc}") from exc
         if resp.status_code // 100 != 2:
             raise ProviderError(f"slack webhook {resp.status_code}: {resp.text[:200]}")
 

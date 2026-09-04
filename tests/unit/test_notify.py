@@ -39,3 +39,21 @@ async def test_sdk_tool_posts_and_returns_text() -> None:
     notifier = SlackWebhookNotifier(NotifyConfig(kind="slack_webhook", url=URL))
     result = await notifier.notify_tool.handler({"text": "hello"})
     assert result["content"][0]["text"] == "posted"
+
+
+@respx.mock
+async def test_sdk_tool_returns_error_result_on_webhook_failure() -> None:
+    respx.post(URL).mock(return_value=httpx.Response(500, text="no"))
+    notifier = SlackWebhookNotifier(NotifyConfig(kind="slack_webhook", url=URL))
+    result = await notifier.notify_tool.handler({"text": "hello"})
+    assert result["is_error"] is True
+    assert "500" in result["content"][0]["text"]
+
+
+@respx.mock
+async def test_sdk_tool_returns_error_result_on_transport_error() -> None:
+    respx.post(URL).mock(side_effect=httpx.ConnectError("boom"))
+    notifier = SlackWebhookNotifier(NotifyConfig(kind="slack_webhook", url=URL))
+    result = await notifier.notify_tool.handler({"text": "hello"})
+    assert result["is_error"] is True
+    assert "unreachable" in result["content"][0]["text"]
