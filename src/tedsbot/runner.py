@@ -43,9 +43,13 @@ class RunSpec:
 
 
 def new_run_dir(kind: str, target: str, home: Path | None = None) -> Path:
-    last_segment = [seg for seg in target.split("/") if seg][-1]
-    safe = re.sub(r"[^A-Za-z0-9_-]+", "-", last_segment).strip("-")[-40:]
-    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    stripped = target.split("?")[0].split("#")[0]
+    segments = [seg for seg in stripped.split("/") if seg]
+    last_segment = segments[-1] if segments else ""
+    safe = re.sub(r"[^A-Za-z0-9_-]+", "-", last_segment).strip("-")[-40:] or "run"
+    # Microsecond precision avoids directory-name collisions between runs
+    # started within the same wall-clock second.
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ")
     base = (home or Path.home()) / ".tedsbot" / "runs"
     run_dir = base / f"{stamp}-{kind}-{safe}"
     run_dir.mkdir(parents=True, exist_ok=False)
@@ -129,17 +133,29 @@ async def run(cfg: Config, spec: RunSpec, run_dir: Path) -> RunSummary:
     (run_dir / "prompt.md").write_text(prompt)
     transcript = run_dir / "transcript.jsonl"
     final_text = ""
+    failed = False
     with transcript.open("a") as fh:
         try:
             async for message in query(prompt=prompt, options=options):
                 fh.write(json.dumps({"type": type(message).__name__, "data": _jsonable(message)}, default=str) + "\n")
+                fh.flush()
                 if isinstance(message, ResultMessage):
                     final_text = str(message.result or "")
         except Exception as exc:  # the SDK raises after yielding an error result
             log.exception("agent run failed")
+            failed = True
             fh.write(json.dumps({"type": "exception", "data": repr(exc)}) + "\n")
+            fh.flush()
             final_text = final_text or f"agent run failed: {exc}"
     summary = read_summary(run_dir / "summary.json", spec.kind, final_text)
+    if failed:
+        # query() can raise after the agent already wrote a summary.json that
+        # looks complete (e.g. it crashed while posting to Jira after writing
+        # the file). Never let a crashed run report ok=True to Slack.
+        summary = summary.model_copy(update={
+            "ok": False,
+            "headline": f"{summary.headline} (run failed: {final_text[:120]})",
+        })
     (run_dir / "summary.resolved.json").write_text(summary.model_dump_json(indent=2))
     try:
         registry.get_notifier(cfg.notify).post(slack_line(summary, run_dir))

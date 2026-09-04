@@ -62,3 +62,23 @@ def test_knowledge_dir_and_claude_md_included_for_fix(cfg, tmp_path: Path) -> No
                    max_turns=10, tools=["Read"], include_edit_tools=True, run_id="r2")
     options, _ = build_options(cfg, spec, tmp_path)
     assert "no tabs" in options.system_prompt["append"]
+
+
+def test_claude_md_absent_for_triage_runs(cfg, tmp_path: Path) -> None:
+    (cfg.repo.path / "CLAUDE.md").write_text("# House rules\nno tabs\n")
+    options, _ = build_options(cfg, _spec(), tmp_path)
+    assert "no tabs" not in options.system_prompt["append"]
+
+
+def test_new_run_dir_bare_id_matches_url_form(temp_home: Path) -> None:
+    bare = new_run_dir("triage_sentry", "APP-1")
+    url = new_run_dir("triage_sentry", "https://sentry.io/x/APP-1/")
+    assert bare.name.endswith("-triage_sentry-APP-1")
+    assert url.name.endswith("-triage_sentry-APP-1")
+
+
+def test_new_run_dir_strips_query_and_handles_empty(temp_home: Path) -> None:
+    with_query = new_run_dir("triage_sentry", "https://sentry.io/org/issues/12345/?project=1")
+    assert with_query.name.endswith("-triage_sentry-12345")
+    empty = new_run_dir("triage_sentry", "///")
+    assert empty.name.endswith("-triage_sentry-run")
