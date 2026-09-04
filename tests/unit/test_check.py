@@ -1,5 +1,7 @@
 # ABOUTME: Tests the check command with injected probes so no real servers or
 # ABOUTME: gh are needed; asserts every check line and the overall verdict.
+import subprocess
+import sys
 from pathlib import Path
 
 import httpx
@@ -8,7 +10,7 @@ import respx
 import yaml
 
 from tedsbot.cli import main
-from tedsbot.commands.check import run_check
+from tedsbot.commands.check import _default_mcp_probe, run_check
 
 
 @pytest.fixture
@@ -58,3 +60,38 @@ def test_cli_check_exit_code(config_path: Path, monkeypatch: pytest.MonkeyPatch,
         code = main(["-c", str(config_path), "check"])
     out = capsys.readouterr().out
     assert code == 1 and "[FAIL] gh auth" in out and "[ok] config" in out
+
+
+def test_default_mcp_probe_unreachable_on_nonzero_exit() -> None:
+    config = {"command": sys.executable, "args": ["-c", "raise SystemExit(1)"]}
+    assert _default_mcp_probe(config) is False
+
+
+def test_default_mcp_probe_reachable_on_zero_exit() -> None:
+    config = {"command": sys.executable, "args": ["-c", "import sys; sys.stdin.read()"]}
+    assert _default_mcp_probe(config) is True
+
+
+def test_default_mcp_probe_unreachable_on_missing_binary() -> None:
+    config = {"command": "/nonexistent/binary-xyz", "args": []}
+    assert _default_mcp_probe(config) is False
+
+
+def test_default_mcp_probe_reachable_on_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
+    def _raise_timeout(*args: object, **kwargs: object) -> None:
+        raise subprocess.TimeoutExpired(cmd="x", timeout=20)
+
+    monkeypatch.setattr("tedsbot.commands.check.subprocess.run", _raise_timeout)
+    assert _default_mcp_probe({"command": "x", "args": []}) is True
+
+
+def test_statuses_check_reports_transport_error(config_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    with respx.mock:
+        respx.get("https://example.atlassian.net/rest/api/3/project/APP/statuses").mock(
+            side_effect=httpx.ConnectError("boom"))
+        report = run_check(config_path, mcp_probe=lambda c: True, gh_probe=lambda: True)
+    names = [r[0] for r in report.results]
+    statuses_result = next(r for r in report.results if r[0] == "ticket statuses")
+    assert statuses_result[1] is False and "boom" in statuses_result[2]
+    assert names.index("claude auth") == names.index("ticket statuses") + 1

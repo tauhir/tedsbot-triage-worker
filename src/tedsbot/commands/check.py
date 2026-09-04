@@ -8,6 +8,8 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import httpx
+
 from tedsbot import registry
 from tedsbot.config import load_config
 from tedsbot.errors import ConfigError, ProviderError
@@ -26,11 +28,15 @@ class CheckReport:
 
 
 def _default_mcp_probe(config: dict) -> bool:
+    # Three outcomes: the process exits and its return code says whether it
+    # succeeded; it times out because a stdio server waiting on stdin has
+    # proven it can launch (treated as reachable); or it never starts at all
+    # (missing binary), which is unreachable.
     cmd = [config["command"], *config.get("args", [])]
     env = {**os.environ, **config.get("env", {})}
     try:
-        subprocess.run(cmd, input=b"", capture_output=True, timeout=20, env=env, check=False)
-        return True
+        result = subprocess.run(cmd, input=b"", capture_output=True, timeout=20, env=env, check=False)
+        return result.returncode == 0
     except subprocess.TimeoutExpired:
         return True  # a stdio server that waits on stdin has started successfully
     except (OSError, FileNotFoundError):
@@ -78,7 +84,7 @@ def run_check(
     try:
         missing = tickets.statuses_exist(wanted)
         report.add("ticket statuses", not missing, "all present" if not missing else f"missing: {', '.join(missing)}")
-    except ProviderError as exc:
+    except (ProviderError, httpx.HTTPError) as exc:
         report.add("ticket statuses", False, str(exc))
 
     has_auth = any(os.environ.get(k) for k in ("ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN"))
