@@ -37,56 +37,205 @@ provider tools. Every run writes `~/.tedsbot/runs/<id>/summary.json`,
 
 ## Setup guide
 
+Follow the steps in order. Steps 1 to 7 spend nothing; step 8 is the first
+run that costs Claude credits. Budget about thirty minutes the first time,
+most of it collecting tokens.
+
 ### 1. Prerequisites
-- Python 3.12+, [uv](https://docs.astral.sh/uv/)
-- Node.js 18+ (the Sentry MCP server runs with `npx`)
-- [GitHub CLI](https://cli.github.com) (`gh`)
-- A local checkout of the repository you want triaged, with full history (`git fetch --unshallow` if it was a shallow clone)
+
+| Need | Why | Check |
+|---|---|---|
+| Python 3.12+ and [uv](https://docs.astral.sh/uv/) | runs the worker | `uv --version` |
+| Node.js 18+ | the Sentry MCP server is an npm package run with `npx` | `node --version` |
+| [GitHub CLI](https://cli.github.com) | the fix stage opens draft PRs with `gh` | `gh --version` |
+| A local checkout of the repository you want triaged | the agent reads code and git history there | `git -C /path/to/checkout log --oneline -1` |
+
+The checkout must have full history: run `git fetch --unshallow` if it was a
+shallow clone. Keep it on the base branch and clean; the worker refuses to
+start a fix run otherwise.
 
 ### 2. Install
-    git clone https://github.com/tauhir/tedsbot-triage-worker && cd tedsbot-triage-worker && uv sync
-Once published to PyPI, also:
-    uv tool install tedsbot-triage-worker
 
-### 3. Credentials
-Export these in the shell (or the service unit) that runs tedsbot.
+```
+git clone https://github.com/tauhir/tedsbot-triage-worker
+cd tedsbot-triage-worker
+uv sync
+uv run tedsbot --help
+```
 
-**Claude.** One of:
-- `ANTHROPIC_API_KEY` from the Claude Console. This is the documented, supported path; usage is metered.
-- `CLAUDE_CODE_OAUTH_TOKEN` from `claude setup-token`, which bills your own Claude subscription (Pro, Max, Team, Enterprise). Anthropic's Agent SDK documentation states: "Unless previously approved, Anthropic does not allow third party developers to offer claude.ai login or rate limits for their products, including agents built on the Claude Agent SDK." tedsbot does not offer login; it passes your own token through. Whether that fits your plan's terms is your call.
+Once published to PyPI, `uv tool install tedsbot-triage-worker` will put a
+`tedsbot` command on your PATH. Until then, run it as `uv run tedsbot` from the
+clone.
 
-**GitHub.** `gh auth login` on the host, or export `GH_TOKEN` (a PAT or a GitHub App installation token). PRs are authored by whichever identity you choose.
+### 3. Collect credentials
 
-**Sentry.** `SENTRY_AUTH_TOKEN`: an auth token with `event:read`, `project:read`, `org:read`.
+You need five secrets. Where to get each, and what it must be allowed to do:
 
-**Atlassian.** `ATLASSIAN_API_TOKEN`: a service token or an OAuth 2.0 access token with browse, comment, create-issue, edit-issue, and transition permissions on the project. Both are sent as a `Bearer` token, and Atlassian Cloud only honours Bearer tokens on the API gateway (`https://api.atlassian.com/ex/jira/<cloud-id>/rest/api/3`), not on your site host. `tickets.cloud_id` is therefore required: read it from `GET https://<site>.atlassian.net/_edge/tenant_info`, which returns `{"cloudId": "..."}`. `tickets.url` is still your site URL and is used for the `browse/` links in tickets and Slack lines.
+| Variable | Where to get it | Must have |
+|---|---|---|
+| `ANTHROPIC_API_KEY` **or** `CLAUDE_CODE_OAUTH_TOKEN` | Claude Console → API keys; or run `claude setup-token` for a subscription token | see the note below |
+| `SENTRY_AUTH_TOKEN` | Sentry → Settings → Auth Tokens (organization token) | `event:read`, `project:read`; `org:read` is *not* required |
+| `ATLASSIAN_API_TOKEN` | Atlassian admin → Service accounts / API tokens, or an OAuth 2.0 access token | browse, comment, create issue, edit issue, transition on the project |
+| `SLACK_WEBHOOK_URL` | Slack → your app → Incoming Webhooks → add to the channel that should see results | post messages |
+| `GH_TOKEN` (optional) | only if the host cannot run `gh auth login`; a PAT or GitHub App installation token | `contents: write`, `pull requests: write` on the target repo |
 
-**Grafana (optional).** `GRAFANA_SERVICE_ACCOUNT_TOKEN` for a service account with Viewer on the relevant data sources.
+**Claude auth note.** An API key is the documented, supported path and is
+metered. A `CLAUDE_CODE_OAUTH_TOKEN` bills your own Claude subscription
+(Pro, Max, Team, Enterprise). Anthropic's Agent SDK documentation states:
+"Unless previously approved, Anthropic does not allow third party developers
+to offer claude.ai login or rate limits for their products, including agents
+built on the Claude Agent SDK." tedsbot does not offer login; it passes your
+own token through. Whether that fits your plan's terms is your call.
 
-**Slack.** `SLACK_WEBHOOK_URL`: an incoming webhook for the channel that should see run results.
+**Atlassian note.** The token is sent as a `Bearer` token to the Atlassian
+API gateway, `https://api.atlassian.com/ex/jira/<cloud-id>/rest/api/3`.
+Atlassian Cloud rejects Bearer tokens on your site host
+(`https://<site>.atlassian.net`) with 401/403, which is why the config needs
+`tickets.cloud_id` (step 4). `tickets.url` stays your site URL; it is only
+used to build `browse/` links.
 
-### 4. Ticketing prerequisites
-The statuses you name under `tickets.statuses` must exist on the project's workflow, and the custom fields under `tickets.fields` must exist on the Bug issue type. Find field IDs with the Jira REST API (`GET /rest/api/3/field`) and status names from the board's workflow. A dedicated bot account for the token is recommended so triage comments are clearly machine-authored.
+Put the secrets in an environment file the worker's shell can source, one
+`NAME=value` per line, no spaces around `=`, no quotes needed:
 
-### 5. Error-source prerequisites
-Turn on Sentry's inbound filters (legacy browsers, web crawlers, health checks, localhost) so noise never becomes an event. Confirm the exact spelling and case of the environment name; Sentry searches are case-sensitive.
+```
+# ~/.config/tedsbot/env  (chmod 600)
+CLAUDE_CODE_OAUTH_TOKEN=...
+SENTRY_AUTH_TOKEN=...
+ATLASSIAN_API_TOKEN=...
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
+```
 
-### 6. Configure
-    cp tedsbot.example.yaml tedsbot.yaml
-Edit every value. Put your team's knowledge (transition map, deploy topology, known noise, replication conventions) as markdown files in the directory named by `agent.knowledge_dir`. Pay particular attention to the `errors.poll` block; the example config's inline comments explain each knob, including `first_seen`.
+Load it with `set -a; . ~/.config/tedsbot/env; set +a` before running
+`tedsbot`, or point a systemd `EnvironmentFile` at it. The config file never
+contains a secret; it references these variables as `${NAME}`.
 
-### 7. Verify
-    tedsbot check
-Every line must read `[ok]`. Nothing has spent credits yet.
+### 4. Find the identifiers your config needs
+
+Run these once and write the answers down. Replace `<site>`, `<cloud-id>`,
+`<org>`, `<project-slug>` as you go.
+
+```
+# Jira cloud id (no auth needed)
+curl -s https://<site>.atlassian.net/_edge/tenant_info
+
+# Jira custom field ids (QA notes / QA instructions or whatever you use)
+curl -s -H "Authorization: Bearer $ATLASSIAN_API_TOKEN" \
+  https://api.atlassian.com/ex/jira/<cloud-id>/rest/api/3/field | jq -r '.[] | select(.custom) | "\(.id)\t\(.name)"'
+
+# Jira status names on the project, per issue type
+curl -s -H "Authorization: Bearer $ATLASSIAN_API_TOKEN" \
+  https://api.atlassian.com/ex/jira/<cloud-id>/rest/api/3/project/<KEY>/statuses | jq -r '.[] | "\(.name): \([.statuses[].name] | join(", "))"'
+
+# Jira Bug issue type id
+curl -s -H "Authorization: Bearer $ATLASSIAN_API_TOKEN" \
+  https://api.atlassian.com/ex/jira/<cloud-id>/rest/api/3/project/<KEY> | jq -r '.issueTypes[] | "\(.id)\t\(.name)"'
+
+# Sentry project id and the exact environment names (case matters).
+# <org> and <project-slug> are the two path segments of the project in the Sentry UI.
+curl -s -H "Authorization: Bearer $SENTRY_AUTH_TOKEN" \
+  https://us.sentry.io/api/0/projects/<org>/<project-slug>/ | jq -r '.id'
+curl -s -H "Authorization: Bearer $SENTRY_AUTH_TOKEN" \
+  https://us.sentry.io/api/0/projects/<org>/<project-slug>/environments/ | jq -r '.[].name'
+```
+
+If your Sentry organisation lives in the EU region, use `https://de.sentry.io`
+and set `errors.region_url` to match.
+
+### 5. Prepare the ticketing workflow and the error source
+
+**Jira.** The worker moves tickets between five statuses: an intake status
+where new bugs land, a triage target where analysed tickets wait for a human,
+an approval status a human moves a ticket into to authorise a fix, an
+in-progress status, and a code-review status. Every one of them must exist on
+the project's workflow under the names you put in `tickets.statuses`. Create a
+dedicated bot account for the token so triage comments are clearly
+machine-authored.
+
+**Sentry.** Turn on the inbound filters (legacy browsers, web crawlers,
+health checks, localhost) so noise never becomes an event. Note the exact
+spelling and case of the production environment name from step 4.
+
+### 6. Write the config and the team knowledge
+
+Keep the config **outside** any repository the worker triages, for example
+`~/.config/tedsbot/tedsbot.yaml`, and pass it with `-c`:
+
+```
+cp tedsbot.example.yaml ~/.config/tedsbot/tedsbot.yaml
+```
+
+Edit every value. The example is fully commented; the knobs people miss are
+`errors.environment` (case-sensitive), `errors.poll.new_error.first_seen`
+(keep it wider than your poll interval), and `agent.knowledge_dir`.
+
+`agent.knowledge_dir` is a directory of markdown files that only your team
+knows: the Jira transition map, which status names differ from their
+transition labels, deploy topology, staging versus production, known noise,
+how you like replication steps written. Everything in it is appended to the
+agent's instructions on every run. Start with one file; a good first one is
+whatever internal doc already explains how a ticket moves across your board.
+
+### 7. Verify, spending nothing
+
+```
+tedsbot -c ~/.config/tedsbot/tedsbot.yaml check
+```
+
+A passing check looks like this:
+
+```
+[ok] config — /home/you/.config/tedsbot/tedsbot.yaml
+[ok] checkout — /srv/checkouts/example-app on main
+[ok] mcp:sentry — npx -y @sentry/mcp-server@latest --organization-slug=example-org
+[ok] mcp:atlassian — uvx mcp-atlassian
+[ok] sentry auth — https://us.sentry.io/api/0/organizations/example-org/issues/
+[ok] gh auth — gh auth status
+[ok] ticket statuses — all present
+[ok] claude auth — ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN
+```
+
+Any `[FAIL]` row names what to fix. The first run of the two MCP rows can
+take twenty seconds while `npx` and `uvx` download the servers; that is
+normal.
 
 ### 8. First run
-    tedsbot triage sentry <issue-id-or-url>
-Read the Slack line, the ticket, and `~/.tedsbot/runs/<id>/transcript.jsonl`.
+
+Pick one unresolved production error from Sentry and run:
+
+```
+tedsbot -c ~/.config/tedsbot/tedsbot.yaml triage sentry <issue-id-or-url>
+```
+
+Expect a few minutes. When it finishes you get three things: a one-line Slack
+message with the recommendation, the ticket key and links; a Jira Bug in your
+triage-target status whose description is the analysis; and a run directory
+under `~/.tedsbot/runs/` holding `prompt.md` (what the agent was told),
+`transcript.jsonl` (everything it did), `summary.json` (what it wrote) and
+`summary.resolved.json` (what the worker accepted). Read the transcript the
+first time; it is the fastest way to see whether your knowledge directory is
+telling the agent what it needs.
+
+For a team-reported bug already in Jira: `tedsbot triage ticket <KEY>`.
 
 ### 9. Deploy
-- **systemd**: a unit running `tedsbot worker` with the env vars in an `EnvironmentFile`. (Milestone 2.)
-- **cron**: `*/15 * * * * tedsbot -c /etc/tedsbot/tedsbot.yaml worker --once`. (Milestone 2.)
+
+- **systemd**: a unit running `tedsbot -c ... worker` with `EnvironmentFile=`
+  pointing at the file from step 3. (Milestone 2.)
+- **cron**: `*/15 * * * * tedsbot -c /etc/tedsbot/tedsbot.yaml worker --once`.
+  (Milestone 2.)
 - **GitHub Action**: composite wrapper. (Milestone 3.)
+
+### Troubleshooting
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `[FAIL] ticket statuses — jira GET ... 401/403` | token sent to the site host, or wrong cloud id | use the gateway URL form; re-check `tickets.cloud_id` from `_edge/tenant_info` |
+| `[FAIL] sentry auth — ... -> 403` | token lacks `project:read` / `event:read` | reissue the Sentry token with those scopes |
+| Poll finds nothing but Sentry shows errors | `errors.environment` case or spelling | copy the name exactly from step 4 |
+| `[FAIL] mcp:sentry` on a fresh host | `npx` not on PATH, or the first download exceeded the probe timeout | install Node 18+; run the printed command once by hand, then re-run `check` |
+| `provider:logs — logs.kind 'grafana' is not registered` | the Grafana provider ships in milestone 2 | comment out the `logs:` block |
+| `fix: not implemented yet` / `worker: not implemented yet` | milestone 1 ships triage only | wait for milestone 2 |
+| `config error: environment variable X is not set` | the env file was not loaded into this shell | `set -a; . ~/.config/tedsbot/env; set +a` |
 
 ## Extending: writing a provider
 Implement one of the protocols in `src/tedsbot/providers/base.py`, ship a knowledge markdown file next to it, and call `register(role, kind, YourClass)` at import. Add the module to `providers/__init__.py`. Your `kind` becomes selectable in the YAML.
