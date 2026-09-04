@@ -1,9 +1,11 @@
 # ABOUTME: Unit tests for the Jira provider: MCP config, prompt facts, JQL
 # ABOUTME: construction, and REST operations via respx.
 import httpx
+import pytest
 import respx
 
 from tedsbot.config import TicketFields, TicketLabels, TicketsConfig, TicketStatuses
+from tedsbot.errors import ProviderError
 from tedsbot.providers.jira import JiraTicketing
 
 BASE = "https://example.atlassian.net/rest/api/3"
@@ -64,12 +66,15 @@ def test_knowledge_mentions_adf_and_transitions() -> None:
 
 @respx.mock
 def test_untriaged_bugs_filters_by_bot_marker() -> None:
-    respx.get(f"{BASE}/search/jql").mock(return_value=httpx.Response(200, json={
+    route = respx.get(f"{BASE}/search/jql").mock(return_value=httpx.Response(200, json={
         "issues": [_issue("APP-1", "To Triage"), _issue("APP-2", "To Triage", ["[tedsbot] analysis"])]
     }))
     out = JiraTicketing(_cfg()).untriaged_bugs("[tedsbot]")
     assert [t.key for t in out] == ["APP-1"]
     assert out[0].url == "https://example.atlassian.net/browse/APP-1"
+    jql = route.calls[0].request.url.params["jql"]
+    assert "issuetype = Bug" in jql
+    assert 'status = "To Triage"' in jql
 
 
 @respx.mock
@@ -108,3 +113,29 @@ def test_statuses_exist_reports_missing() -> None:
     ]))
     missing = JiraTicketing(_cfg()).statuses_exist(["To Triage", "Dev Team Review"])
     assert missing == ["Dev Team Review"]
+
+
+@respx.mock
+def test_search_follows_next_page_token() -> None:
+    def _responder(request: httpx.Request) -> httpx.Response:
+        if "nextPageToken" not in request.url.params:
+            return httpx.Response(200, json={
+                "issues": [_issue("APP-1", "Approved For Fix")],
+                "nextPageToken": "t2",
+                "isLast": False,
+            })
+        assert request.url.params["nextPageToken"] == "t2"
+        return httpx.Response(200, json={"issues": [_issue("APP-2", "Approved For Fix")], "isLast": True})
+
+    route = respx.get(f"{BASE}/search/jql").mock(side_effect=_responder)
+    out = JiraTicketing(_cfg()).approved_for_fix()
+    assert [t.key for t in out] == ["APP-1", "APP-2"]
+    assert route.call_count == 2
+
+
+@respx.mock
+def test_comment_rejects_empty_body() -> None:
+    route = respx.post(f"{BASE}/issue/APP-1/comment").mock(return_value=httpx.Response(201, json={}))
+    with pytest.raises(ProviderError, match="empty"):
+        JiraTicketing(_cfg()).comment("APP-1", "   \n   ")
+    assert route.called is False

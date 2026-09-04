@@ -12,6 +12,8 @@ from tedsbot.errors import ProviderError
 from tedsbot.providers.base import McpServer, TicketRef
 from tedsbot.registry import register
 
+SEARCH_MAX_ISSUES = 500
+
 
 def adf_paragraphs(text: str) -> dict[str, Any]:
     paragraphs = [
@@ -93,8 +95,18 @@ class JiraTicketing:
         )
 
     def _search(self, jql: str, fields: str = "summary,status,comment") -> list[dict[str, Any]]:
-        data = self._get("/search/jql", jql=jql, fields=fields, maxResults="50")
-        return list(data.get("issues", []))
+        issues: list[dict[str, Any]] = []
+        params: dict[str, str] = {"jql": jql, "fields": fields, "maxResults": "50"}
+        while True:
+            data = self._get("/search/jql", **params)
+            issues.extend(data.get("issues", []))
+            if len(issues) >= SEARCH_MAX_ISSUES:
+                break
+            next_token = data.get("nextPageToken")
+            if data.get("isLast") or not next_token:
+                break
+            params["nextPageToken"] = next_token
+        return issues
 
     def untriaged_bugs(self, bot_marker: str) -> list[TicketRef]:
         jql = (
@@ -125,7 +137,10 @@ class JiraTicketing:
         return [self._ref(i) for i in self._search(jql, fields="summary,status")]
 
     def comment(self, key: str, body: str) -> None:
-        resp = self._client.post(f"/issue/{key}/comment", json={"body": adf_paragraphs(body)})
+        doc = adf_paragraphs(body)
+        if not doc["content"]:
+            raise ProviderError(f"comment body for {key} is empty")
+        resp = self._client.post(f"/issue/{key}/comment", json={"body": doc})
         if resp.status_code not in (200, 201):
             raise ProviderError(f"jira comment on {key} {resp.status_code}: {resp.text[:200]}")
 
