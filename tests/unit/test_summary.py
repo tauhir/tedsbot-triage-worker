@@ -37,8 +37,18 @@ def test_schema_invalid_json_falls_back(tmp_path: Path) -> None:
 
 def test_slack_line_for_success(tmp_path: Path) -> None:
     s = RunSummary(kind="triage_sentry", ticket="APP-1", ticket_url="https://j/APP-1",
-                   recommendation="🟡", status=None, pr_url=None, headline="race in save", ok=True)
-    assert slack_line(s, tmp_path) == "🟡 APP-1 — race in save\nhttps://j/APP-1"
+                   recommendation="🟡", status=None, pr_url=None, headline="race in save",
+                   tldr="Two people saving the same review at once could lose one edit.", ok=True)
+    assert slack_line(s, tmp_path) == (
+        "🟡 APP-1 — Two people saving the same review at once could lose one edit.\n"
+        "Technical: race in save\nhttps://j/APP-1"
+    )
+
+
+def test_slack_line_without_tldr_uses_headline_alone(tmp_path: Path) -> None:
+    s = RunSummary(kind="triage_sentry", ticket="APP-1", ticket_url="https://j/APP-1",
+                   recommendation="🟢", headline="null deref", ok=True)
+    assert slack_line(s, tmp_path) == "🟢 APP-1 — null deref\nhttps://j/APP-1"
 
 
 def test_slack_line_for_failure_has_warning_and_run_dir(tmp_path: Path) -> None:

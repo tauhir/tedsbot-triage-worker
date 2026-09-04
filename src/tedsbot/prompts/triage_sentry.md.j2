@@ -31,8 +31,10 @@ replication-steps sections of your knowledge exactly.
 8. Record the run summary by calling the `submit_summary` tool with these fields (correct and resubmit if it reports a validation error):
 
 ```json
-{"kind": "triage_sentry", "ticket": "{{ jira_project }}-NNN", "ticket_url": "{{ jira_url }}/browse/{{ jira_project }}-NNN", "recommendation": "🟢", "status": null, "pr_url": null, "headline": "one-line root cause", "ok": true}
+{"kind": "triage_sentry", "ticket": "{{ jira_project }}-NNN", "ticket_url": "{{ jira_url }}/browse/{{ jira_project }}-NNN", "recommendation": "🟢", "status": null, "pr_url": null, "headline": "one technical line: root cause with file or component", "tldr": "one or two plain sentences for non-engineers", "ok": true}
 ```
+
+`tldr` is read by non-engineers in Slack: say what broke for users (or that nothing user-facing broke), why in everyday words, and what happens next. No code, file paths, exception names or identifiers; those belong in `headline`.
 
 For a duplicate or a respected Won't Do, set recommendation "⚪", ticket to the existing key, and a headline that names it.
 

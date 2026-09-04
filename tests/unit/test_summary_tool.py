@@ -10,10 +10,12 @@ async def test_valid_submission_writes_summary_json(tmp_path: Path) -> None:
     server = build_summary_server(tmp_path)
     assert server.name == "run" and server.allowed_tools == ["mcp__run__submit_summary"]
     result = await server.tool.handler({"kind": "triage_sentry", "ticket": "APP-1", "ticket_url": "https://j/APP-1",
-                                        "recommendation": "🟢", "headline": "null deref", "ok": True})
+                                        "recommendation": "🟢", "headline": "null deref",
+                                        "tldr": "The admin chart page crashed on load; a small fix is ready to review.", "ok": True})
     assert result.get("is_error") is not True and "recorded" in result["content"][0]["text"]
     data = json.loads((tmp_path / "summary.json").read_text())
     assert data["ticket"] == "APP-1" and data["status"] is None and data["pr_url"] is None
+    assert data["tldr"].startswith("The admin chart page crashed")
 
 
 async def test_invalid_submission_returns_error_and_writes_nothing(tmp_path: Path) -> None:

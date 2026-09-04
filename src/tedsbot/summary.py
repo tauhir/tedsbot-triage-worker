@@ -25,6 +25,7 @@ class RunSummary(BaseModel):
     status: str | None = None
     pr_url: str | None = None
     headline: str
+    tldr: str | None = None
     ok: bool
 
 
@@ -81,7 +82,10 @@ def slack_line(s: RunSummary, run_dir: Path) -> str:
     if not s.ok:
         return f"⚠️ {s.kind.replace('_', ' ')} {s.ticket or '?'} — {s.headline}\nrun dir: {run_dir}"
     lead = s.recommendation or s.status or "✅"
-    parts = [f"{lead} {s.ticket or '?'} — {s.headline}"]
+    if s.tldr:
+        parts = [f"{lead} {s.ticket or '?'} — {s.tldr}", f"Technical: {s.headline}"]
+    else:
+        parts = [f"{lead} {s.ticket or '?'} — {s.headline}"]
     if s.ticket_url:
         parts.append(s.ticket_url)
     if s.pr_url:
@@ -98,10 +102,11 @@ SUMMARY_SCHEMA: dict[str, Any] = {
         "recommendation": {"type": ["string", "null"], "enum": ["🟢", "🟡", "⚪", "🔴", None]},
         "status": {"type": ["string", "null"], "description": "Fix runs only, e.g. 'draft PR opened', 'blocked'"},
         "pr_url": {"type": ["string", "null"]},
-        "headline": {"type": "string", "description": "One line: the root cause or outcome"},
+        "headline": {"type": "string", "description": "One technical line: the root cause or outcome, with the file or component"},
+        "tldr": {"type": "string", "description": "One or two plain-English sentences for non-engineers: what broke for users, why, what happens next. No code, no file paths, no identifiers."},
         "ok": {"type": "boolean"},
     },
-    "required": ["kind", "headline", "ok"],
+    "required": ["kind", "headline", "tldr", "ok"],
 }
 
 
