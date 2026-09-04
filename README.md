@@ -102,6 +102,10 @@ read-only git subcommands (log, show, blame, diff) during triage, and to
 git and gh during fix. Run the worker as a dedicated user holding only
 the secrets it needs, not a shared or broadly-privileged account.
 
+MCP server credentials are handed to the agent process through its
+environment rather than its command line, so a token never appears in
+an argv listing or a process table.
+
 ## Policy and billing
 Each run consumes Claude tokens under whichever credential you configured. Set `agent.max_turns` to cap a runaway run. See Credentials above for the subscription-token note.
 

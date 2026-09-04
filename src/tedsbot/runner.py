@@ -90,8 +90,16 @@ def build_options(cfg: Config, spec: RunSpec, run_dir: Path) -> tuple[ClaudeAgen
 
     mcp_servers: dict[str, Any] = {}
     allowed = list(spec.tools)
+    env = {k: os.environ[k] for k in AUTH_ENV if k in os.environ}
     for server in [p.mcp_server() for p in providers] + [notifier.sdk_server()]:
-        mcp_servers[server.name] = server.config
+        config = server.config
+        if isinstance(config, dict) and isinstance(config.get("env"), dict):
+            # Provider credentials reach the stdio server through the agent
+            # process environment, never through an MCP config that could be
+            # serialised onto a command line or into a log.
+            env.update(config["env"])
+            config = {k: v for k, v in config.items() if k != "env"}
+        mcp_servers[server.name] = config
         allowed.extend(server.allowed_tools)
     allowed.append(f"Write({summary_path})")
 
@@ -99,7 +107,6 @@ def build_options(cfg: Config, spec: RunSpec, run_dir: Path) -> tuple[ClaudeAgen
         f"{knowledge.text}\n\n## Run directory\n\n"
         f"Your run directory is `{run_dir}`. The only file you may write is `{summary_path}`."
     )
-    env = {k: os.environ[k] for k in AUTH_ENV if k in os.environ}
     options = ClaudeAgentOptions(
         system_prompt={
             "type": "preset", "preset": "claude_code",

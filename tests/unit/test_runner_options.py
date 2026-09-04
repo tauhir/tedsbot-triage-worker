@@ -1,5 +1,6 @@
 # ABOUTME: Tests the pure option-building half of the runner: prompt assembly,
 # ABOUTME: tool allowlists, MCP servers, permission mode, and run directories.
+import json
 from pathlib import Path
 
 import pytest
@@ -53,7 +54,23 @@ def test_build_options_passes_only_present_auth_env(cfg, tmp_path: Path, monkeyp
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     monkeypatch.setenv("CLAUDE_CODE_OAUTH_TOKEN", "oauth")
     options, _ = build_options(cfg, _spec(), tmp_path)
-    assert options.env == {"CLAUDE_CODE_OAUTH_TOKEN": "oauth"}
+    assert options.env["CLAUDE_CODE_OAUTH_TOKEN"] == "oauth"
+    assert "ANTHROPIC_API_KEY" not in options.env
+    assert set(options.env) == {
+        "CLAUDE_CODE_OAUTH_TOKEN",
+        "SENTRY_ACCESS_TOKEN",
+        "JIRA_URL",
+        "ATLASSIAN_OAUTH_CLOUD_ID",
+        "ATLASSIAN_OAUTH_ACCESS_TOKEN",
+    }
+
+
+def test_mcp_server_credentials_stay_off_the_command_line(cfg, tmp_path: Path) -> None:
+    options, _ = build_options(cfg, _spec(), tmp_path)
+    assert "sentry-token" not in json.dumps(options.mcp_servers, default=str)
+    assert "atlassian-token" not in json.dumps(options.mcp_servers, default=str)
+    assert options.env["SENTRY_ACCESS_TOKEN"] == "sentry-token"
+    assert options.env["ATLASSIAN_OAUTH_ACCESS_TOKEN"] == "atlassian-token"
 
 
 def test_knowledge_dir_and_claude_md_included_for_fix(cfg, tmp_path: Path) -> None:
