@@ -1,0 +1,65 @@
+# tedsbot config. Copy to tedsbot.yaml, fill in, run `tedsbot check`.
+# Secrets are never written here: use ${ENV_VAR} and export the variable.
+
+repo:
+  path: /srv/checkouts/example-app
+  base_branch: main
+  github: example-org/example-app
+
+errors:
+  kind: sentry
+  org: example-org
+  project_id: "1234567890"
+  region_url: https://us.sentry.io
+  environment: production          # case-sensitive in Sentry
+  token: ${SENTRY_AUTH_TOKEN}
+  poll:
+    new_error:   { first_seen: -30m, min_times_seen: 3 }
+    escalating:  { enabled: true }
+    performance: { enabled: true, min_times_seen: 10 }
+    chronic:     { enabled: true, min_times_seen: 3 }
+    levels: [error, fatal]
+    stats_period: 14d
+    max_issues_per_cycle: 5
+
+tickets:
+  kind: jira
+  url: https://example.atlassian.net
+  cloud_id: 00000000-0000-0000-0000-000000000000
+  project: APP
+  token: ${ATLASSIAN_API_TOKEN}
+  bug_issue_type_id: "10009"
+  fields:
+    qa_notes: customfield_10075
+    qa_instructions: customfield_10073
+  statuses:
+    intake: To Triage
+    triage_target: Dev Team Review
+    fix_approved: Approved For Fix
+    in_progress: In Progress
+    code_review: Code Review
+  labels:
+    from_errors: sentry-triage
+    insufficient_repro: insufficient-repro
+
+# logs: optional log store. The grafana provider lands in milestone 2; uncomment then.
+# logs:
+#   kind: grafana
+#   url: https://grafana.example.com
+#   token: ${GRAFANA_SERVICE_ACCOUNT_TOKEN}
+
+notify:
+  kind: slack_webhook
+  url: ${SLACK_WEBHOOK_URL}
+
+agent:
+  model: claude-opus-5
+  max_turns:
+    triage: 60
+    fix: 150
+  knowledge_dir: ./docs/triage      # consumer-supplied knowledge
+  knowledge_size_warn_kb: 64
+
+worker:
+  interval_seconds: 900
+  branch_prefix: tedsbot/
