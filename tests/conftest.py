@@ -1,5 +1,6 @@
 # ABOUTME: Shared pytest fixtures for the tedsbot test suite.
 # ABOUTME: Provides a temporary HOME and a minimal valid config dict.
+import os
 import subprocess
 from pathlib import Path
 
@@ -76,3 +77,12 @@ def env_tokens(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("SENTRY_AUTH_TOKEN", "sentry-token")
     monkeypatch.setenv("ATLASSIAN_API_TOKEN", "atlassian-token")
     monkeypatch.setenv("SLACK_WEBHOOK_URL", "https://hooks.slack.example/T/B/X")
+
+
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
+    if os.environ.get("TEDSBOT_E2E") == "1":
+        return
+    skip = pytest.mark.skip(reason="set TEDSBOT_E2E=1 with real credentials to run")
+    for item in items:
+        if "e2e" in item.keywords:
+            item.add_marker(skip)
