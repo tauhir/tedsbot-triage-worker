@@ -16,7 +16,7 @@ from claude_agent_sdk import ClaudeAgentOptions, ResultMessage, query
 
 from tedsbot import registry
 from tedsbot.config import Config
-from tedsbot.errors import ProviderError
+from tedsbot.errors import ConfigError, ProviderError
 from tedsbot.knowledge import assemble_knowledge
 from tedsbot.prompts import render_prompt
 from tedsbot.summary import RunKind, RunSummary, read_summary, slack_line
@@ -129,36 +129,65 @@ def _jsonable(message: Any) -> Any:
 
 
 async def run(cfg: Config, spec: RunSpec, run_dir: Path) -> RunSummary:
-    options, prompt = build_options(cfg, spec, run_dir)
-    (run_dir / "prompt.md").write_text(prompt)
     transcript = run_dir / "transcript.jsonl"
     final_text = ""
     failed = False
+    setup_error: str | None = None
     with transcript.open("a") as fh:
         try:
-            async for message in query(prompt=prompt, options=options):
-                fh.write(json.dumps({"type": type(message).__name__, "data": _jsonable(message)}, default=str) + "\n")
-                fh.flush()
-                if isinstance(message, ResultMessage):
-                    final_text = str(message.result or "")
-        except Exception as exc:  # the SDK raises after yielding an error result
-            log.exception("agent run failed")
-            failed = True
+            # Setup lives inside the envelope so a bad config, an unresolvable
+            # provider or a prompt that will not render still produces a
+            # summary and a Slack line instead of a bare traceback.
+            options, prompt = build_options(cfg, spec, run_dir)
+            (run_dir / "prompt.md").write_text(prompt)
+        except Exception as exc:
+            log.exception("run setup failed")
+            setup_error = f"{type(exc).__name__}: {exc}"
             fh.write(json.dumps({"type": "exception", "data": repr(exc)}) + "\n")
             fh.flush()
-            final_text = final_text or f"agent run failed: {exc}"
-    summary = read_summary(run_dir / "summary.json", spec.kind, final_text)
-    if failed:
-        # query() can raise after the agent already wrote a summary.json that
-        # looks complete (e.g. it crashed while posting to Jira after writing
-        # the file). Never let a crashed run report ok=True to Slack.
-        summary = summary.model_copy(update={
-            "ok": False,
-            "headline": f"{summary.headline} (run failed: {final_text[:120]})",
-        })
+        else:
+            try:
+                async for message in query(prompt=prompt, options=options):
+                    fh.write(json.dumps({"type": type(message).__name__, "data": _jsonable(message)}, default=str) + "\n")
+                    fh.flush()
+                    if isinstance(message, ResultMessage):
+                        final_text = str(message.result or "")
+            except Exception as exc:  # the SDK raises after yielding an error result
+                log.exception("agent run failed")
+                failed = True
+                fh.write(json.dumps({"type": "exception", "data": repr(exc)}) + "\n")
+                fh.flush()
+                final_text = final_text or f"agent run failed: {exc}"
+    if setup_error is not None:
+        summary = RunSummary(
+            kind=spec.kind,
+            headline=f"run failed before agent start: {setup_error}"[:200],
+            ok=False,
+        )
+    else:
+        summary = read_summary(run_dir / "summary.json", spec.kind, final_text)
+        if failed:
+            # query() can raise after the agent already wrote a summary.json that
+            # looks complete (e.g. it crashed while posting to Jira after writing
+            # the file). Never let a crashed run report ok=True to Slack.
+            summary = summary.model_copy(update={
+                "ok": False,
+                "headline": f"{summary.headline} (run failed: {final_text[:120]})",
+            })
     (run_dir / "summary.resolved.json").write_text(summary.model_dump_json(indent=2))
+    _notify(cfg, summary, run_dir)
+    return summary
+
+
+def _notify(cfg: Config, summary: RunSummary, run_dir: Path) -> None:
+    # Whatever broke the run may also be what stops the notifier resolving,
+    # so obtaining it is guarded separately from posting with it.
     try:
-        registry.get_notifier(cfg.notify).post(slack_line(summary, run_dir))
+        notifier = registry.get_notifier(cfg.notify)
+    except ConfigError as exc:
+        log.error("notifier unavailable, skipping post: %s", exc)
+        return
+    try:
+        notifier.post(slack_line(summary, run_dir))
     except ProviderError as exc:
         log.error("notification failed: %s", exc)
-    return summary
