@@ -23,12 +23,22 @@ def test_triage_sentry_substitutes_facts_and_inputs() -> None:
     assert "/run/summary.json" in text
     assert "example-org" in text and "Dev Team Review" in text and "sentry-triage" in text
     assert "NEVER modify repository code" in text
+    assert '"kind": "triage_sentry"' in text
 
 
 def test_triage_ticket_substitutes() -> None:
     text = render_prompt("triage_ticket", FACTS, ticket_key="APP-2", summary_path="/run/summary.json")
     assert "TICKET_KEY: APP-2" in text
     assert "insufficient-repro" in text and "customfield_10075" in text
+
+
+def test_triage_ticket_carries_hard_rules() -> None:
+    text = render_prompt("triage_ticket", FACTS, ticket_key="APP-2", summary_path="/run/summary.json")
+    assert "NEVER modify repository code" in text
+    assert "[tedsbot] " in text
+    assert "followed by the recommendation tier on the same line" in text
+    assert "Never move a ticket backwards" in text
+    assert '"kind": "triage_ticket"' in text
 
 
 def test_missing_fact_fails_loudly() -> None:

@@ -25,7 +25,7 @@ your knowledge exactly.
 2. Quality gate. A triagable report needs concrete reproduction steps, expected vs actual behaviour, and roughly where in the product it happens. If any are missing, do NOT spelunk the codebase on guesswork: comment asking for the specific missing items by name, add the label `{{ label_insufficient_repro }}`, write the summary with recommendation "🔴" and headline "insufficient repro — asked reporter for details", and STOP.
 3. Cross-check Sentry for errors matching the reported behaviour (message text, view or endpoint, timeframe). A match converts "where does this live" into "why did this throw"; link it.
 4. Analyse per triage-method steps 2–4 (use a 14-day history window).
-5. Write the analysis as a ticket comment, prefixed with the marker `[tedsbot]` on its first line, per triage-method step 6.
+5. Write the analysis as a ticket comment per triage-method step 6, with one change: its first line is the marker `[tedsbot]` followed by the recommendation tier on the same line, e.g. `[tedsbot] 🟡 needs review — ...`. The marker is how the worker recognises tickets it has already triaged.
 6. Populate `{{ qa_notes_field }}` with the tier line plus a 2–3 sentence root-cause summary.
 7. Transition to **{{ status_triage_target }}** if not already at or past it.
 8. Write the run summary as JSON to `{{ summary_path }}`:
