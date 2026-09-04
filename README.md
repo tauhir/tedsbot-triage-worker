@@ -7,7 +7,7 @@ and implements approved fixes as draft pull requests.
 
 Powered by Claude. Not affiliated with Anthropic.
 
-**Status.** Milestone 1: triage. Milestone 2 adds `fix` and `worker`.
+**Status:** milestone 1 ships `check`, `triage sentry`, and `triage ticket`. The `fix` and `worker` subcommands are registered but print `not implemented yet` and exit 1; milestone 2 implements them.
 
 ## Mission
 
@@ -73,7 +73,7 @@ Turn on Sentry's inbound filters (legacy browsers, web crawlers, health checks, 
 
 ### 6. Configure
     cp tedsbot.example.yaml tedsbot.yaml
-Edit every value. Put your team's knowledge (transition map, deploy topology, known noise, replication conventions) as markdown files in the directory named by `agent.knowledge_dir`.
+Edit every value. Put your team's knowledge (transition map, deploy topology, known noise, replication conventions) as markdown files in the directory named by `agent.knowledge_dir`. Pay particular attention to the `errors.poll` block; the example config's inline comments explain each knob, including `first_seen`.
 
 ### 7. Verify
     tedsbot check
@@ -97,10 +97,10 @@ Each run directory holds `prompt.md` (what the agent was told), `transcript.json
 ### Security notes
 The agent subprocess inherits the worker process's full environment — the
 SDK merges its own env over `os.environ`, and the worker does not isolate
-it. The mitigation is the tool allowlist: `triage` restricts Bash to git
-subcommands, and `fix` restricts it to git and `gh`. Run the worker as a
-dedicated user holding only the secrets it needs, not a shared or
-broadly-privileged account.
+it. The mitigation is the tool allowlist: it restricts Bash to four
+read-only git subcommands (log, show, blame, diff) during triage, and to
+git and gh during fix. Run the worker as a dedicated user holding only
+the secrets it needs, not a shared or broadly-privileged account.
 
 ## Policy and billing
 Each run consumes Claude tokens under whichever credential you configured. Set `agent.max_turns` to cap a runaway run. See Credentials above for the subscription-token note.
