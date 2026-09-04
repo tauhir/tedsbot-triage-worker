@@ -59,7 +59,7 @@ Export these in the shell (or the service unit) that runs tedsbot.
 
 **Sentry.** `SENTRY_AUTH_TOKEN`: an auth token with `event:read`, `project:read`, `org:read`.
 
-**Atlassian.** `ATLASSIAN_API_TOKEN`: a service token with browse, comment, create-issue, edit-issue, and transition permissions on the project.
+**Atlassian.** `ATLASSIAN_API_TOKEN`: a service token or an OAuth 2.0 access token with browse, comment, create-issue, edit-issue, and transition permissions on the project. Both are sent as a `Bearer` token, and Atlassian Cloud only honours Bearer tokens on the API gateway (`https://api.atlassian.com/ex/jira/<cloud-id>/rest/api/3`), not on your site host. `tickets.cloud_id` is therefore required: read it from `GET https://<site>.atlassian.net/_edge/tenant_info`, which returns `{"cloudId": "..."}`. `tickets.url` is still your site URL and is used for the `browse/` links in tickets and Slack lines.
 
 **Grafana (optional).** `GRAFANA_SERVICE_ACCOUNT_TOKEN` for a service account with Viewer on the relevant data sources.
 

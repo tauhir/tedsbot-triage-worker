@@ -12,6 +12,10 @@ from tedsbot.errors import ProviderError
 from tedsbot.providers.base import McpServer, TicketRef
 from tedsbot.registry import register
 
+# Atlassian Cloud rejects Bearer tokens on the site host; service tokens and
+# OAuth access tokens are only honoured by the API gateway, which addresses a
+# site by cloud id. Site URLs stay in use for human-facing browse/ links.
+ATLASSIAN_GATEWAY = "https://api.atlassian.com"
 SEARCH_MAX_ISSUES = 500
 
 
@@ -38,7 +42,7 @@ class JiraTicketing:
     def __init__(self, cfg: TicketsConfig) -> None:
         self.cfg = cfg
         self._client = httpx.Client(
-            base_url=f"{cfg.url}/rest/api/3",
+            base_url=f"{ATLASSIAN_GATEWAY}/ex/jira/{cfg.cloud_id}/rest/api/3",
             headers={"Authorization": f"Bearer {cfg.token}", "Accept": "application/json"},
             timeout=30,
         )

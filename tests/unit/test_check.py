@@ -23,7 +23,8 @@ def config_path(tmp_path: Path, config_dict: dict, env_tokens: None) -> Path:
 @respx.mock
 def test_all_green(config_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
-    respx.get("https://example.atlassian.net/rest/api/3/project/APP/statuses").mock(
+    respx.get("https://api.atlassian.com/ex/jira/00000000-0000-0000-0000-000000000000"
+        "/rest/api/3/project/APP/statuses").mock(
         return_value=httpx.Response(200, json=[{"name": "Bug", "statuses": [
             {"name": n} for n in ["To Triage", "Dev Team Review", "Approved For Fix", "In Progress", "Code Review"]]}])
     )
@@ -36,7 +37,8 @@ def test_all_green(config_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 @respx.mock
 def test_missing_status_and_gh_fail(config_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
     monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
-    respx.get("https://example.atlassian.net/rest/api/3/project/APP/statuses").mock(
+    respx.get("https://api.atlassian.com/ex/jira/00000000-0000-0000-0000-000000000000"
+        "/rest/api/3/project/APP/statuses").mock(
         return_value=httpx.Response(200, json=[{"name": "Bug", "statuses": [{"name": "To Triage"}]}])
     )
     report = run_check(config_path, mcp_probe=lambda c: True, gh_probe=lambda: False)
@@ -55,7 +57,8 @@ def test_cli_check_exit_code(config_path: Path, monkeypatch: pytest.MonkeyPatch,
     monkeypatch.setattr("tedsbot.commands.check._default_mcp_probe", lambda c: True)
     monkeypatch.setattr("tedsbot.commands.check._default_gh_probe", lambda: False)
     with respx.mock:
-        respx.get("https://example.atlassian.net/rest/api/3/project/APP/statuses").mock(
+        respx.get("https://api.atlassian.com/ex/jira/00000000-0000-0000-0000-000000000000"
+        "/rest/api/3/project/APP/statuses").mock(
             return_value=httpx.Response(200, json=[]))
         code = main(["-c", str(config_path), "check"])
     out = capsys.readouterr().out
@@ -88,7 +91,8 @@ def test_default_mcp_probe_reachable_on_timeout(monkeypatch: pytest.MonkeyPatch)
 def test_statuses_check_reports_transport_error(config_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
     with respx.mock:
-        respx.get("https://example.atlassian.net/rest/api/3/project/APP/statuses").mock(
+        respx.get("https://api.atlassian.com/ex/jira/00000000-0000-0000-0000-000000000000"
+        "/rest/api/3/project/APP/statuses").mock(
             side_effect=httpx.ConnectError("boom"))
         report = run_check(config_path, mcp_probe=lambda c: True, gh_probe=lambda: True)
     names = [r[0] for r in report.results]

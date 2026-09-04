@@ -8,7 +8,7 @@ from tedsbot.config import TicketFields, TicketLabels, TicketsConfig, TicketStat
 from tedsbot.errors import ProviderError
 from tedsbot.providers.jira import JiraTicketing
 
-BASE = "https://example.atlassian.net/rest/api/3"
+BASE = "https://api.atlassian.com/ex/jira/cid/rest/api/3"
 
 
 def _cfg() -> TicketsConfig:
@@ -139,3 +139,13 @@ def test_comment_rejects_empty_body() -> None:
     with pytest.raises(ProviderError, match="empty"):
         JiraTicketing(_cfg()).comment("APP-1", "   \n   ")
     assert route.called is False
+
+
+@respx.mock
+def test_rest_client_targets_gateway_with_bearer() -> None:
+    route = respx.get(f"{BASE}/project/APP/statuses").mock(
+        return_value=httpx.Response(200, json=[]))
+    JiraTicketing(_cfg()).statuses_exist(["To Triage"])
+    request = route.calls[0].request
+    assert str(request.url).startswith("https://api.atlassian.com/ex/jira/cid/rest/api/3/")
+    assert request.headers["Authorization"] == "Bearer tok"
