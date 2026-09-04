@@ -39,7 +39,8 @@ def test_build_options_shape(cfg, tmp_path: Path) -> None:
     assert options.model == "claude-opus-5"
     assert options.max_turns == 60
     assert set(options.mcp_servers) == {"sentry", "atlassian", "notify"}
-    assert f"Write({run_dir}/summary.json)" in options.allowed_tools
+    assert f"Write(//{run_dir}/summary.json)" in options.allowed_tools
+    assert f"Write({run_dir}/summary.json)" not in options.allowed_tools  # single slash is project-relative
     assert "mcp__sentry__*" in options.allowed_tools and "mcp__atlassian__*" in options.allowed_tools
     assert "mcp__notify__notify_slack" in options.allowed_tools
     assert "Edit" not in options.allowed_tools

@@ -101,7 +101,9 @@ def build_options(cfg: Config, spec: RunSpec, run_dir: Path) -> tuple[ClaudeAgen
             config = {k: v for k, v in config.items() if k != "env"}
         mcp_servers[server.name] = config
         allowed.extend(server.allowed_tools)
-    allowed.append(f"Write({summary_path})")
+    # Permission rules read a single leading "/" as project-relative; an
+    # absolute filesystem path needs the "//" prefix.
+    allowed.append(f"Write(//{summary_path})")
 
     append = (
         f"{knowledge.text}\n\n## Run directory\n\n"
