@@ -1,0 +1,65 @@
+# ABOUTME: Protocols and dataclasses every provider implements: what it
+# ABOUTME: contributes to the agent run and what Python can call directly.
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any, Protocol, runtime_checkable
+
+
+@dataclass(frozen=True)
+class McpServer:
+    name: str
+    config: dict[str, Any]
+    allowed_tools: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class ErrorCandidate:
+    short_id: str
+    issue_id: str
+    title: str
+    pass_label: str
+    permalink: str
+
+
+@dataclass(frozen=True)
+class TicketRef:
+    key: str
+    url: str
+    status: str
+    summary: str
+
+
+@runtime_checkable
+class Ticketing(Protocol):
+    def mcp_server(self) -> McpServer: ...
+    def prompt_facts(self) -> dict[str, str]: ...
+    def knowledge(self) -> str: ...
+    def untriaged_bugs(self, bot_marker: str) -> list[TicketRef]: ...
+    def approved_for_fix(self) -> list[TicketRef]: ...
+    def status_of(self, key: str) -> str: ...
+    def search_text(self, text: str) -> list[TicketRef]: ...
+    def comment(self, key: str, body: str) -> None: ...
+    def statuses_exist(self, names: list[str]) -> list[str]: ...
+
+
+@runtime_checkable
+class ErrorSource(Protocol):
+    def mcp_server(self) -> McpServer: ...
+    def prompt_facts(self) -> dict[str, str]: ...
+    def knowledge(self) -> str: ...
+    def poll(self) -> list[ErrorCandidate]: ...
+    def already_ticketed(self, short_id: str, tickets: Ticketing) -> bool: ...
+
+
+@runtime_checkable
+class LogStore(Protocol):
+    def mcp_server(self) -> McpServer: ...
+    def prompt_facts(self) -> dict[str, str]: ...
+    def knowledge(self) -> str: ...
+
+
+@runtime_checkable
+class Notifier(Protocol):
+    def post(self, text: str) -> None: ...
+    def sdk_server(self) -> McpServer: ...
