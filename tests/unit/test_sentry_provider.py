@@ -75,6 +75,22 @@ def test_issue_is_production_fails_closed() -> None:
 
 
 @respx.mock
+def test_issue_is_production_fails_closed_on_transport_error() -> None:
+    respx.get("https://us.sentry.io/api/0/organizations/example-org/issues/9/tags/environment/").mock(
+        side_effect=httpx.ConnectError("boom")
+    )
+    assert SentryErrorSource(_cfg()).issue_is_production({"id": "9"}) is False
+
+
+@respx.mock
+def test_issue_is_production_fails_closed_on_bad_json() -> None:
+    respx.get("https://us.sentry.io/api/0/organizations/example-org/issues/9/tags/environment/").mock(
+        return_value=httpx.Response(200, text="not json")
+    )
+    assert SentryErrorSource(_cfg()).issue_is_production({"id": "9"}) is False
+
+
+@respx.mock
 def test_poll_dedupes_across_passes_and_caps() -> None:
     def _issues(request: httpx.Request) -> httpx.Response:
         q = request.url.params["query"]
@@ -95,6 +111,33 @@ def test_poll_dedupes_across_passes_and_caps() -> None:
     out = src.poll()
     assert [c.short_id for c in out] == ["APP-1", "APP-2"]
     assert out[0].pass_label == "new-error"
+
+
+@respx.mock
+def test_poll_performance_pass_filters_by_environment() -> None:
+    def _issues(request: httpx.Request) -> httpx.Response:
+        q = request.url.params["query"]
+        if "issue.category" in q:
+            body = [
+                {"id": "7", "shortId": "APP-7", "title": "slow", "permalink": "u7"},
+                {"id": "8", "shortId": "APP-8", "title": "slow2", "permalink": "u8"},
+            ]
+        else:
+            body = []
+        return httpx.Response(200, json=body)
+
+    def _tags(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/issues/7/tags/environment/"):
+            return httpx.Response(200, json={"topValues": [{"value": "production"}]})
+        return httpx.Response(200, json={"topValues": [{"value": "staging"}]})
+
+    respx.get("https://us.sentry.io/api/0/organizations/example-org/issues/").mock(side_effect=_issues)
+    respx.get(url__regex=r".*/tags/environment/$").mock(side_effect=_tags)
+
+    src = SentryErrorSource(_cfg(max_issues_per_cycle=10))
+    out = src.poll()
+    assert [c.short_id for c in out] == ["APP-7"]
+    assert out[0].pass_label == "performance"
 
 
 def test_already_ticketed_uses_ticket_search() -> None:
