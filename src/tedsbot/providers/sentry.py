@@ -71,6 +71,10 @@ class SentryErrorSource:
             timeout=30,
         )
 
+    def close(self) -> None:
+        """Release the HTTP connection pool; long-lived callers own the lifetime."""
+        self._client.close()
+
     def mcp_server(self) -> McpServer:
         return McpServer(
             name="sentry",
@@ -94,9 +98,19 @@ class SentryErrorSource:
         return resources.files("tedsbot.providers.knowledge").joinpath("sentry.md").read_text()
 
     def check_auth(self) -> tuple[bool, str]:
-        url = self._org_url("")
+        # The organization-detail endpoint needs org:read, which many Sentry auth
+        # tokens lack even when issue search works; probe with the same
+        # project-scoped issues query the poller makes, at limit=1.
+        url = self._org_url("issues/")
+        params = {
+            "project": self.cfg.project_id,
+            "query": "is:unresolved",
+            "limit": "1",
+            "statsPeriod": "1d",
+            "environment": self.cfg.environment,
+        }
         try:
-            resp = self._client.get(url)
+            resp = self._client.get(url, params=params)
         except httpx.HTTPError as exc:
             return False, f"{url} unreachable: {exc}"
         if resp.status_code == 200:

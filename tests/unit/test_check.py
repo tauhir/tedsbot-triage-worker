@@ -16,11 +16,11 @@ STATUSES_URL = (
     "https://api.atlassian.com/ex/jira/00000000-0000-0000-0000-000000000000"
     "/rest/api/3/project/APP/statuses"
 )
-SENTRY_ORG_URL = "https://us.sentry.io/api/0/organizations/example-org/"
+SENTRY_AUTH_URL = "https://us.sentry.io/api/0/organizations/example-org/issues/"
 
 
 def _mock_sentry_auth(status: int = 200) -> None:
-    respx.get(SENTRY_ORG_URL).mock(return_value=httpx.Response(status, json={}))
+    respx.get(SENTRY_AUTH_URL).mock(return_value=httpx.Response(status, json=[]))
 
 
 @pytest.fixture
@@ -148,3 +148,16 @@ def test_sentry_auth_row_fails_with_status(config_path: Path, monkeypatch: pytes
     row = next(r for r in report.results if r[0] == "sentry auth")
     assert row[1] is False and "401" in row[2]
     assert not report.ok
+
+
+@respx.mock
+def test_sentry_auth_probe_uses_issue_search_not_org_detail(config_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Sentry auth tokens routinely lack org:read while issue search works, so the
+    probe must exercise the same query the poller makes, scoped to the project."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    route = respx.get(SENTRY_AUTH_URL).mock(return_value=httpx.Response(200, json=[]))
+    respx.get(STATUSES_URL).mock(return_value=httpx.Response(200, json=[]))
+    run_check(config_path, mcp_probe=lambda c: True, gh_probe=lambda: True)
+    params = route.calls[0].request.url.params
+    assert params["project"] == "123" and params["limit"] == "1"
+    assert params["environment"] == "production"
