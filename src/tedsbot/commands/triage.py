@@ -37,5 +37,5 @@ async def triage(cfg: Config, spec: RunSpec, *, run_fn: RunFn | None = None,
 def main_triage(cfg: Config, kind: str, target: str) -> int:
     spec = build_sentry_spec(cfg, target) if kind == "sentry" else build_ticket_spec(cfg, target)
     summary, run_dir = asyncio.run(triage(cfg, spec, run_fn=_run))
-    print(slack_line(summary, run_dir))
+    print(slack_line(summary, run_dir, cfg.tickets.statuses.fix_approved))
     return 0 if summary.ok else 1

@@ -35,27 +35,74 @@ def test_schema_invalid_json_falls_back(tmp_path: Path) -> None:
     assert s.ok is False and s.headline.startswith("agent text")
 
 
-def test_slack_line_for_success(tmp_path: Path) -> None:
-    s = RunSummary(kind="triage_sentry", ticket="APP-1", ticket_url="https://j/APP-1",
-                   recommendation="🟡", status=None, pr_url=None, headline="race in save",
-                   tldr="Two people saving the same review at once could lose one edit.", ok=True)
-    assert slack_line(s, tmp_path) == (
-        "🟡 APP-1 — Two people saving the same review at once could lose one edit.\n"
-        "Technical: race in save\nhttps://j/APP-1"
-    )
+def _summary(**over):
+    base = dict(kind="triage_sentry", ticket="APP-420", ticket_url="https://j/APP-420", recommendation="🟡",
+                outcome="new_ticket", title="Saved-filter edit drops the audit entry",
+                headline="TicketAssignment.__str__ raises DoesNotExist in pre_save (apps/reviews/models.py:1866)",
+                tldr="An admin edited a saved filter. One history line was lost, nothing else broke.",
+                events=1, users=1, first_seen="2026-08-26T09:14:00Z", last_seen="2026-08-26T09:14:00Z", ok=True)
+    base.update(over)
+    return RunSummary(**base)
 
 
-def test_slack_line_without_tldr_uses_headline_alone(tmp_path: Path) -> None:
-    s = RunSummary(kind="triage_sentry", ticket="APP-1", ticket_url="https://j/APP-1",
-                   recommendation="🟢", headline="null deref", ok=True)
-    assert slack_line(s, tmp_path) == "🟢 APP-1 — null deref\nhttps://j/APP-1"
+def test_slack_message_for_new_yellow_ticket(tmp_path: Path) -> None:
+    text = slack_line(_summary(), tmp_path, approve_status="Approved For Fix")
+    assert text.splitlines() == [
+        "*🟡 New bug found: needs a developer's decision*",
+        "*<https://j/APP-420|APP-420>* Saved-filter edit drops the audit entry",
+        "*What happened:* An admin edited a saved filter. One history line was lost, nothing else broke.",
+        "*Impact:* 1 event, 1 user, first seen 26 Aug 2026, last seen 26 Aug 2026",
+        "*Technical:* TicketAssignment.__str__ raises DoesNotExist in pre_save (apps/reviews/models.py:1866)",
+        "*Next:* A developer reads the analysis and picks a direction, then moves the ticket to Approved For Fix.",
+    ]
+
+
+def test_slack_message_headers_and_actions_by_outcome(tmp_path: Path) -> None:
+    cases = {
+        ("new_ticket", "🟢"): ("New bug found: low-risk fix ready", "move it to Approved For Fix"),
+        ("new_ticket", "⚪"): ("Not a code bug", "No code change"),
+        ("new_ticket", "🔴"): ("New ticket: cause not established", "adds what the analysis is missing"),
+        ("regression", "🟢"): ("Regression: a fixed bug is back", "Approved For Fix"),
+        ("duplicate", "⚪"): ("Known issue seen again", "No action"),
+        ("analysed_existing", "🟡"): ("Bug report analysed: needs a developer's decision", "Approved For Fix"),
+        ("insufficient_repro", "🔴"): ("Bug report needs more detail", "reporter"),
+    }
+    for (outcome, tier), (header, action) in cases.items():
+        text = slack_line(_summary(outcome=outcome, recommendation=tier), tmp_path, approve_status="Approved For Fix")
+        first, last = text.splitlines()[0], text.splitlines()[-1]
+        assert first == f"*{tier} {header}*", (outcome, tier, first)
+        assert action in last, (outcome, tier, last)
+
+
+def test_slack_message_omits_impact_and_title_when_unknown(tmp_path: Path) -> None:
+    text = slack_line(_summary(title=None, events=None, users=None, first_seen=None, last_seen=None), tmp_path)
+    lines = text.splitlines()
+    assert lines[1] == "*<https://j/APP-420|APP-420>*"
+    assert not any(line.startswith("*Impact:*") for line in lines)
+
+
+def test_slack_message_replaces_em_dashes_and_pluralises(tmp_path: Path) -> None:
+    text = slack_line(_summary(tldr="Nothing broke — the save went through — one line was lost.", events=3, users=2,
+                               first_seen="2026-08-01T00:00:00Z", last_seen="2026-09-04T00:00:00Z"), tmp_path)
+    assert "—" not in text
+    assert "*What happened:* Nothing broke, the save went through, one line was lost." in text
+    assert "*Impact:* 3 events, 2 users, first seen 1 Aug 2026, last seen 4 Sep 2026" in text
+
+
+def test_slack_message_without_tldr_still_has_header_and_technical(tmp_path: Path) -> None:
+    text = slack_line(_summary(tldr=None, outcome=None), tmp_path)
+    lines = text.splitlines()
+    assert lines[0] == "*🟡 Triage result*"
+    assert not any(line.startswith("*What happened:*") for line in lines)
+    assert any(line.startswith("*Technical:*") for line in lines)
 
 
 def test_slack_line_for_failure_has_warning_and_run_dir(tmp_path: Path) -> None:
     s = RunSummary(kind="triage_ticket", ticket="APP-2", ticket_url=None, recommendation=None,
                    status=None, pr_url=None, headline="agent died", ok=False)
     line = slack_line(s, tmp_path)
-    assert line.startswith("⚠️ triage ticket APP-2 — agent died") and str(tmp_path) in line
+    assert line.splitlines()[0] == "*⚠️ Triage run failed: triage ticket APP-2*"
+    assert "agent died" in line and str(tmp_path) in line and "—" not in line
 
 
 def test_fallback_headline_is_first_meaningful_line_without_markdown(tmp_path: Path) -> None:

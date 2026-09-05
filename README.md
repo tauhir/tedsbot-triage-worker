@@ -207,8 +207,9 @@ tedsbot -c ~/.config/tedsbot/tedsbot.yaml triage sentry <issue-id-or-url>
 ```
 
 Expect a few minutes. When it finishes you get three things: a Slack message
-with the recommendation and ticket key, a plain-language line for non-engineers,
-a technical line for the developer, and the links; a Jira Bug in your
+with a headline saying what kind of event this is, the ticket key and title, a
+plain-language account for non-engineers, the impact (events, users, first and
+last seen), the technical root cause, and what the reader should do next; a Jira Bug in your
 triage-target status whose description is the analysis; and a run directory
 under `~/.tedsbot/runs/` holding `prompt.md` (what the agent was told),
 `transcript.jsonl` (everything it did), `summary.json` (what it wrote) and

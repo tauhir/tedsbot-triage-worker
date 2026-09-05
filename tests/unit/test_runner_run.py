@@ -80,7 +80,8 @@ async def test_successful_run_records_transcript_and_notifies(
     assert resolved["headline"] == "null deref in checkout"
     assert (run_dir / "prompt.md").read_text()
     posted = json.loads(route.calls[0].request.content)["text"]
-    assert posted.startswith("🟢 APP-7 — null deref in checkout")
+    assert posted.startswith("*🟢 ") and "*<https://example.atlassian.net/browse/APP-7|APP-7>*" in posted
+    assert "*Technical:* null deref in checkout" in posted and "Approved For Fix" in posted
 
 
 async def test_crash_after_summary_reports_not_ok(
@@ -95,7 +96,7 @@ async def test_crash_after_summary_reports_not_ok(
     # The agent's own headline survives; the crash is appended to it.
     assert summary.headline.startswith("null deref in checkout")
     assert "run failed" in summary.headline
-    assert json.loads(route.calls[0].request.content)["text"].startswith("⚠️")
+    assert json.loads(route.calls[0].request.content)["text"].startswith("*⚠️ Triage run failed")
 
 
 async def test_setup_failure_never_escapes(
@@ -112,7 +113,7 @@ async def test_setup_failure_never_escapes(
     assert summary.ok is False
     assert "before agent start" in summary.headline
     assert (run_dir / "summary.resolved.json").is_file()
-    assert json.loads(route.calls[0].request.content)["text"].startswith("⚠️")
+    assert json.loads(route.calls[0].request.content)["text"].startswith("*⚠️ Triage run failed")
 
 
 async def test_notifier_failure_does_not_raise(
