@@ -31,10 +31,10 @@ your knowledge exactly.
 8. Record the run summary by calling the `submit_summary` tool with these fields (correct and resubmit if it reports a validation error):
 
 ```json
-{"kind": "triage_ticket", "ticket": "{{ ticket_key }}", "ticket_url": "{{ jira_url }}/browse/{{ ticket_key }}", "recommendation": "🟡", "status": null, "pr_url": null, "headline": "one technical line: root cause with file or component", "tldr": "one or two plain sentences for non-engineers", "ok": true}
+{"kind": "triage_ticket", "ticket": "{{ ticket_key }}", "ticket_url": "{{ jira_url }}/browse/{{ ticket_key }}", "recommendation": "🟡", "status": null, "pr_url": null, "headline": "one technical line: root cause with file or component", "tldr": "at most two plain sentences for non-engineers", "ok": true}
 ```
 
-`tldr` is read by non-engineers in Slack: say what broke for users (or that nothing user-facing broke), why in everyday words, and what happens next. No code, file paths, exception names or identifiers; those belong in `headline`.
+`tldr` is read by non-engineers in Slack and must be at most two sentences (under 320 characters): say what broke for users (or that nothing user-facing broke), why in everyday words, and what happens next. No code, file paths, exception names or identifiers; those belong in `headline`.
 
 ## Rules
 

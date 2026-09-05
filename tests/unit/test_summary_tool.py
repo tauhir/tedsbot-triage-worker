@@ -30,3 +30,10 @@ async def test_resubmission_overwrites(tmp_path: Path) -> None:
     await server.tool.handler({"kind": "fix", "headline": "first", "ok": False})
     await server.tool.handler({"kind": "fix", "headline": "second", "ok": True, "status": "draft PR opened"})
     assert json.loads((tmp_path / "summary.json").read_text())["headline"] == "second"
+
+
+async def test_overlong_tldr_is_rejected_so_the_agent_shortens_it(tmp_path: Path) -> None:
+    server = build_summary_server(tmp_path)
+    result = await server.tool.handler({"kind": "triage_sentry", "headline": "h", "tldr": "word " * 90, "ok": True})
+    assert result["is_error"] is True and "tldr" in result["content"][0]["text"]
+    assert not (tmp_path / "summary.json").exists()

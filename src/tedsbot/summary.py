@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from claude_agent_sdk import create_sdk_mcp_server, tool
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, Field, ValidationError
 
 from tedsbot import __version__
 from tedsbot.providers.base import McpServer
@@ -24,8 +24,8 @@ class RunSummary(BaseModel):
     recommendation: Recommendation | None = None
     status: str | None = None
     pr_url: str | None = None
-    headline: str
-    tldr: str | None = None
+    headline: str = Field(max_length=300)
+    tldr: str | None = Field(default=None, max_length=320)
     ok: bool
 
 
@@ -102,8 +102,8 @@ SUMMARY_SCHEMA: dict[str, Any] = {
         "recommendation": {"type": ["string", "null"], "enum": ["🟢", "🟡", "⚪", "🔴", None]},
         "status": {"type": ["string", "null"], "description": "Fix runs only, e.g. 'draft PR opened', 'blocked'"},
         "pr_url": {"type": ["string", "null"]},
-        "headline": {"type": "string", "description": "One technical line: the root cause or outcome, with the file or component"},
-        "tldr": {"type": "string", "description": "One or two plain-English sentences for non-engineers: what broke for users, why, what happens next. No code, no file paths, no identifiers."},
+        "headline": {"type": "string", "maxLength": 300, "description": "One technical line (under 300 characters): the root cause or outcome, with the file or component"},
+        "tldr": {"type": "string", "maxLength": 320, "description": "At most two plain-English sentences (under 320 characters) for non-engineers: what broke for users, why, what happens next. No code, no file paths, no identifiers."},
         "ok": {"type": "boolean"},
     },
     "required": ["kind", "headline", "tldr", "ok"],
