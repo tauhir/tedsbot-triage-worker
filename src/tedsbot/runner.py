@@ -212,6 +212,6 @@ def _notify(cfg: Config, summary: RunSummary, run_dir: Path) -> None:
         log.error("notifier unavailable, skipping post: %s", exc)
         return
     try:
-        notifier.post(slack_line(summary, run_dir))
+        notifier.post(slack_line(summary, run_dir, cfg.tickets.statuses.fix_approved))
     except ProviderError as exc:
         log.error("notification failed: %s", exc)

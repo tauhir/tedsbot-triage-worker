@@ -36,11 +36,13 @@ def test_schema_invalid_json_falls_back(tmp_path: Path) -> None:
 
 
 def _summary(**over):
-    base = dict(kind="triage_sentry", ticket="APP-420", ticket_url="https://j/APP-420", recommendation="🟡",
-                outcome="new_ticket", title="Saved-filter edit drops the audit entry",
-                headline="TicketAssignment.__str__ raises DoesNotExist in pre_save (apps/reviews/models.py:1866)",
-                tldr="An admin edited a saved filter. One history line was lost, nothing else broke.",
-                events=1, users=1, first_seen="2026-08-26T09:14:00Z", last_seen="2026-08-26T09:14:00Z", ok=True)
+    base = {
+        "kind": "triage_sentry", "ticket": "APP-420", "ticket_url": "https://j/APP-420", "recommendation": "🟡",
+        "outcome": "new_ticket", "title": "Saved-filter edit drops the audit entry",
+        "headline": "TicketAssignment.__str__ raises DoesNotExist in pre_save (apps/reviews/models.py:1866)",
+        "tldr": "An admin edited a saved filter. One history line was lost, nothing else broke.",
+        "events": 1, "users": 1, "first_seen": "2026-08-26T09:14:00Z", "last_seen": "2026-08-26T09:14:00Z", "ok": True,
+    }
     base.update(over)
     return RunSummary(**base)
 
