@@ -17,8 +17,13 @@
    can verify and flag any remaining discrepancy instead of smoothing it.
 5. **Dedupe against the ticketing system** by exception message and by the
    error label:
-   - Open match: comment the new occurrence stats and STOP (⚪ duplicate).
-   - Closed as Won't Do: comment stats, respect the decision, STOP (⚪).
+   - Open match: look for an earlier comment of yours on it (they start with
+     `[tedsbot]`). Add one short comment with the new event count, user
+     count and last-seen only when there is no earlier comment or the
+     stats changed since it. Otherwise write nothing. Either way STOP
+     (⚪ duplicate) and say in the summary headline whether the stats
+     changed.
+   - Closed as Won't Do: same rule, and respect the decision. STOP (⚪).
    - Closed as Done: this is a regression; create a NEW ticket linked
      "relates to" the old one and cover what un-fixed it.
    - No match: continue.
@@ -38,3 +43,12 @@
 
 Rules: honesty over confidence; cite evidence for every claim; never edit,
 commit, or push any repository file during triage.
+
+## Writing style, everywhere you write
+
+Ticket descriptions, comments, QA notes and the run summary are read by the
+whole team. Plain sentences, one idea each: no em-dashes, no semicolons, no
+markdown headings inside comments. Every comment you write starts with the
+marker `[tedsbot]` so later runs can find it. Ticket summaries name the page
+or feature and the symptom in plain words, with the exception type in
+trailing parentheses.

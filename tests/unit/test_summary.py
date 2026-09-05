@@ -65,7 +65,7 @@ def test_slack_message_headers_and_actions_by_outcome(tmp_path: Path) -> None:
         ("new_ticket", "⚪"): ("Not a code bug", "No code change"),
         ("new_ticket", "🔴"): ("New ticket: cause not established", "adds what the analysis is missing"),
         ("regression", "🟢"): ("Regression: a fixed bug is back", "Approved For Fix"),
-        ("duplicate", "⚪"): ("Known issue seen again", "No action"),
+        ("duplicate", "⚪"): ("Known issue seen again", "existing ticket covers it"),
         ("analysed_existing", "🟡"): ("Bug report analysed: needs a developer's decision", "Approved For Fix"),
         ("insufficient_repro", "🔴"): ("Bug report needs more detail", "reporter"),
     }

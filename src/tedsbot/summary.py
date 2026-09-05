@@ -109,7 +109,7 @@ _HEADERS: dict[tuple[str, str], str] = {
 
 def _next_action(outcome: str | None, tier: str | None, approve_status: str) -> str:
     if outcome in ("duplicate", "not_a_bug"):
-        return "No action. The new occurrence is logged on the existing ticket."
+        return "No action. The existing ticket covers it, and new occurrences are noted there when the numbers change."
     if outcome == "insufficient_repro":
         return "The reporter answers the questions in the ticket comment."
     if tier == "🟢":

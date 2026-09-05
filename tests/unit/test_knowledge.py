@@ -40,3 +40,11 @@ def test_unreadable_consumer_file_is_skipped_with_warning(tmp_path: Path) -> Non
     block = assemble_knowledge([], tmp_path, warn_kb=64)
     assert "good content" in block.text
     assert any("bad.md" in w and "skipped" in w for w in block.warnings)
+
+
+def test_shipped_method_carries_the_house_rules_for_comments_and_style() -> None:
+    block = assemble_knowledge([], None, warn_kb=64)
+    text = block.text
+    assert "only when" in text and "stats changed" in text  # duplicate: comment only on change
+    assert "[tedsbot]" in text  # every comment starts with the marker
+    assert "no em-dashes" in text and "no semicolons" in text  # writing style applies to Jira prose

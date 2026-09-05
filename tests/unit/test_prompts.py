@@ -23,6 +23,7 @@ def test_triage_sentry_substitutes_facts_and_inputs() -> None:
     assert "submit_summary" in text and "/run/summary.json" not in text
     assert "tldr" in text and "non-engineers" in text
     assert "outcome" in text and "first_seen" in text and "em-dash" in text
+    assert "Plain sentences everywhere you write" in text
     assert "example-org" in text and "Dev Team Review" in text and "sentry-triage" in text
     assert "NEVER modify repository code" in text
     assert '"kind": "triage_sentry"' in text
@@ -33,6 +34,7 @@ def test_triage_ticket_substitutes() -> None:
     assert "TICKET_KEY: APP-2" in text
     assert "tldr" in text and "non-engineers" in text
     assert "outcome" in text and "first_seen" in text and "em-dash" in text
+    assert "Plain sentences everywhere you write" in text
     assert "insufficient-repro" in text and "customfield_10075" in text
 
 
