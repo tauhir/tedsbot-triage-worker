@@ -27,6 +27,12 @@ def test_triage_has_sentry_and_ticket() -> None:
     assert ns.triage_kind == "ticket" and ns.target == "APP-2"
 
 
+def test_fix_parser_takes_a_ticket_key() -> None:
+    parser = build_parser()
+    ns = parser.parse_args(["fix", "APP-7"])
+    assert ns.command == "fix" and ns.target == "APP-7"
+
+
 def test_no_command_prints_help_and_exits_2(capsys: pytest.CaptureFixture[str]) -> None:
     assert main([]) == 2
     assert "usage:" in capsys.readouterr().err

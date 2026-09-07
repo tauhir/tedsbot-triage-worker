@@ -7,7 +7,7 @@ and implements approved fixes as draft pull requests.
 
 Powered by Claude. Not affiliated with Anthropic.
 
-**Status:** milestone 1 ships `check`, `triage sentry`, and `triage ticket`. The `fix` and `worker` subcommands are registered but print `not implemented yet` and exit 1; milestone 2 implements them.
+**Status:** milestone 1 ships `check`, `triage sentry`, and `triage ticket`. Milestone 2a adds `fix`: gates, the fix agent, and a CI watch that hands red results back. The `worker` subcommand is registered but still prints `not implemented yet` and exits 1.
 
 ## Mission
 
@@ -227,6 +227,97 @@ For a team-reported bug already in Jira: `tedsbot triage ticket <KEY>`.
   (Milestone 2.)
 - **GitHub Action**: composite wrapper. (Milestone 3.)
 
+## The fix stage
+
+Triage never edits code. A human decides when a ticket is ready to implement
+by moving it to the configured approval status, `tickets.statuses.fix_approved`,
+and then running:
+
+```
+tedsbot -c ~/.config/tedsbot/tedsbot.yaml fix <TICKET-KEY>
+```
+
+### The approval flow
+
+Approving a ticket is the only signal the fix stage acts on. There is no
+separate "start" step. Once the ticket is in the approved status, the run
+above gates, implements, and opens a draft PR in one pass.
+
+### The three gates
+
+Before the agent runs, plain Python checks three preconditions and refuses
+the run if any fail:
+
+| Gate | Refusal message |
+|---|---|
+| The checkout is clean and on the base branch | `checkout <path> has uncommitted changes` or `checkout <path> is on '<branch>', expected '<base_branch>'` |
+| The ticket is in the approved status | `<KEY> is in '<status>', expected '<fix_approved>'` |
+| No PR is already open for the fix branch | `open PR already exists for <branch>: <url>` or `gh pr list failed: <error>` |
+
+A refused gate never starts the agent. It writes a `gate refused` summary and
+posts it to Slack with the refusal message as the technical line.
+
+### Branch, tests, and the fix
+
+`fix.branch_prefix` names the branch the agent works on: `<prefix><TICKET-KEY>`,
+for example `tedsbot/APP-42`. `fix.test_command`, when set, is the command
+the agent runs before opening the PR. It reports the real outcome, the exact
+command and its summary line, in both the PR body and the run summary. When
+`fix.test_command` is unset, the agent does not run tests and says so in the
+PR body instead of claiming a result it never observed.
+
+### CI wait and hand-back
+
+`fix.ci_wait_minutes` controls whether the worker watches CI after the PR
+opens, by polling `gh pr checks`. Set to `0`, the default, the run ends once
+the draft PR is open and the summary status stays `draft PR opened`.
+Set above `0`, the worker polls every `fix.ci_poll_seconds` for up to that
+many minutes:
+
+- **All checks pass:** the status becomes `CI green`. A second Slack message
+  reflects this.
+- **A check fails:** the worker comments on the ticket naming the failing
+  checks, updates the status to `CI red, handed back`, and posts a second
+  Slack message with the same detail. A developer reads the PR and the
+  ticket comment, then fixes or closes it.
+- **The wait times out with no verdict:** the run summary and Slack message
+  are left as they were when the PR opened. Nothing is reported as green or
+  red because nothing was confirmed either way.
+
+### GitHub identity
+
+`GH_TOKEN` (or `gh auth login` in the worker's environment) decides which
+GitHub identity authors the PRs, the branch pushes, and the CI polling calls.
+A personal access token works today. A dedicated GitHub App installation
+token is a later option for a bot identity that is not tied to a person.
+
+### Guardrails
+
+The fix stage opens a **draft** PR and never more than that: it never
+marks a PR ready for review, never merges, and never transitions the ticket
+past `tickets.statuses.code_review`. Merge and QA stay with a human in every
+case.
+
+Give the worker its own clean clone of the repository, on the base branch,
+that nothing else writes to. The first gate above exists because the worker
+shares that checkout with nothing else. A clone used for anything else will
+eventually fail that gate with uncommitted changes that are not the
+worker's.
+
+### The six fix statuses
+
+Each appears in `summary.resolved.json` as `status` and drives the Slack
+headline:
+
+| Status | Slack headline | Meaning |
+|---|---|---|
+| `draft PR opened` | Draft PR opened: ready for review | The agent implemented the fix and opened a draft PR. CI was not watched, or `ci_wait_minutes` is `0`. |
+| `CI green` | Fix passed CI: ready for review | The PR's checks all passed during the watch window. |
+| `CI red, handed back` | Fix failed CI: handed back | A check failed during the watch window. The ticket and Slack both name the failing checks. |
+| `blocked` | Fix blocked: needs a decision | The agent needs a human choice it cannot make on its own and asked on the ticket instead of guessing. |
+| `already open` | Fix already in progress | A PR for this branch already existed. No new work happened. |
+| `gate refused` | Fix not started: precondition failed | One of the three gates above failed before the agent ran. |
+
 ### Troubleshooting
 
 | Symptom | Cause | Fix |
@@ -236,7 +327,10 @@ For a team-reported bug already in Jira: `tedsbot triage ticket <KEY>`.
 | Poll finds nothing but Sentry shows errors | `errors.environment` case or spelling | copy the name exactly from step 4 |
 | `[FAIL] mcp:sentry` on a fresh host | `npx` not on PATH, or the first download exceeded the probe timeout | install Node 18+; run the printed command once by hand, then re-run `check` |
 | `provider:logs — logs.kind 'grafana' is not registered` | the Grafana provider ships in milestone 2 | comment out the `logs:` block |
-| `fix: not implemented yet` / `worker: not implemented yet` | milestone 1 ships triage only | wait for milestone 2 |
+| `worker: not implemented yet` | the worker loop is a later milestone | wait for it, or run `fix` and `triage` by hand or from cron |
+| `gate refused: checkout <path> has uncommitted changes` | the checkout is shared with other work | give the worker its own clean clone on the base branch |
+| `gh pr list failed: not logged in` | `gh` has no credential in the worker's environment | set `GH_TOKEN` or run `gh auth login` where the worker runs |
+| `Fix blocked: needs a decision` | the agent found a choice it should not make alone | answer the `[tedsbot]` question on the ticket, then re-approve |
 | `config error: environment variable X is not set` | the env file was not loaded into this shell | `set -a; . ~/.config/tedsbot/env; set +a` |
 
 ## Extending: writing a provider
