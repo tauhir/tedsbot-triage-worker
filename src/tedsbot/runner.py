@@ -71,12 +71,18 @@ def _project_claude_md(repo: Path) -> str | None:
 
 
 def build_options(cfg: Config, spec: RunSpec, run_dir: Path) -> tuple[ClaudeAgentOptions, str]:
-    errors = registry.get_error_source(cfg.errors)
     tickets = registry.get_ticketing(cfg.tickets)
     notifier = registry.get_notifier(cfg.notify)
-    providers = [errors, tickets]
-    if cfg.logs is not None:
-        providers.append(registry.get_log_store(cfg.logs))
+    # A fix run implements a ticket a triage run already analysed, so it reads
+    # and writes the ticket and nothing else. Withholding the error source and
+    # the log store keeps their tools, knowledge and credentials out of a run
+    # that has no use for them.
+    if spec.kind == "fix":
+        providers = [tickets]
+    else:
+        providers = [registry.get_error_source(cfg.errors), tickets]
+        if cfg.logs is not None:
+            providers.append(registry.get_log_store(cfg.logs))
 
     extra = []
     if spec.include_edit_tools and (claude_md := _project_claude_md(cfg.repo.path)):

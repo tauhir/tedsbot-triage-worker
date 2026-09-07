@@ -22,6 +22,14 @@ def _spec() -> RunSpec:
                    inputs={"sentry_issue": "APP-1"}, max_turns=60, tools=list(TRIAGE_TOOLS), run_id="r1")
 
 
+def _fix_spec() -> RunSpec:
+    return RunSpec(kind="fix", prompt_name="fix",
+                   inputs={"ticket_key": "APP-7", "branch": "tedsbot/APP-7", "base_branch": "main",
+                           "github_repo": "example-org/example-app", "test_command": "none",
+                           "pr_body_path": "/srv/checkouts/example-app/.git/tedsbot/pr-body.md"},
+                   max_turns=150, tools=list(FIX_TOOLS), include_edit_tools=True, run_id="APP-7")
+
+
 def test_new_run_dir_layout(temp_home: Path) -> None:
     d = new_run_dir("triage_sentry", "https://sentry.io/x/APP-1/")
     assert d.is_dir() and d.parent == temp_home / ".tedsbot" / "runs"
@@ -76,9 +84,7 @@ def test_mcp_server_credentials_stay_off_the_command_line(cfg, tmp_path: Path) -
 
 def test_knowledge_dir_and_claude_md_included_for_fix(cfg, tmp_path: Path) -> None:
     (cfg.repo.path / "CLAUDE.md").write_text("# House rules\nno tabs\n")
-    spec = RunSpec(kind="fix", prompt_name="triage_sentry", inputs={"sentry_issue": "x"},
-                   max_turns=10, tools=["Read"], include_edit_tools=True, run_id="r2")
-    options, _ = build_options(cfg, spec, tmp_path)
+    options, _ = build_options(cfg, _fix_spec(), tmp_path)
     assert "no tabs" in options.system_prompt["append"]
 
 
@@ -113,3 +119,16 @@ def test_fix_options_allow_edit_tools_test_command_and_gh_token(cfg, tmp_path: P
     assert "Bash(uv run pytest -q:*)" in options.allowed_tools
     assert options.env["GH_TOKEN"] == "ghp_x"
     assert "BRANCH: tedsbot/APP-7" in prompt
+
+
+def test_fix_runs_get_the_ticketing_provider_only(cfg, tmp_path: Path) -> None:
+    """A fix run implements an already-triaged ticket, so the error source is not its business."""
+    options, _ = build_options(cfg, _fix_spec(), tmp_path)
+    assert set(options.mcp_servers) == {"atlassian", "notify", "run"}
+    assert not any(t.startswith("mcp__sentry__") for t in options.allowed_tools)
+    assert "mcp__atlassian__*" in options.allowed_tools
+
+
+def test_triage_runs_keep_both_providers(cfg, tmp_path: Path) -> None:
+    options, _ = build_options(cfg, _spec(), tmp_path)
+    assert set(options.mcp_servers) == {"sentry", "atlassian", "notify", "run"}
