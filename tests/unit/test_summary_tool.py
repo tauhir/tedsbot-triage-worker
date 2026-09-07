@@ -59,3 +59,13 @@ async def test_fix_submission_with_unknown_status_is_rejected(tmp_path: Path) ->
     server = build_summary_server(tmp_path)
     result = await server.tool.handler({"kind": "fix", "status": "done-ish", "headline": "h", "tldr": "t", "ok": True})
     assert result["is_error"] is True and "status" in result["content"][0]["text"]
+
+
+async def test_triage_submission_without_outcome_is_rejected(tmp_path: Path) -> None:
+    """The Slack header is chosen by outcome, so a triage run without one renders as nothing."""
+    server = build_summary_server(tmp_path)
+    result = await server.tool.handler({"kind": "triage_sentry", "ticket": "APP-1", "recommendation": "🟢",
+                                        "headline": "h", "tldr": "t", "ok": True})
+    assert result["is_error"] is True
+    assert "outcome is required for triage runs" in result["content"][0]["text"]
+    assert not (tmp_path / "summary.json").exists()

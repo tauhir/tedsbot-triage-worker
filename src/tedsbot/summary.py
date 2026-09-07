@@ -261,6 +261,13 @@ def build_summary_server(run_dir: Path) -> SummaryServer:
         except ValidationError as exc:
             problems = "; ".join(f"{'.'.join(str(p) for p in e['loc'])}: {e['msg']}" for e in exc.errors())
             return {"content": [{"type": "text", "text": f"summary rejected: {problems}"}], "is_error": True}
+        if summary.kind != "fix" and summary.outcome is None:
+            # The Slack header for a triage run is chosen by outcome, so a
+            # summary without one renders as a bare "Triage result". The model
+            # stays permissive because fallback summaries have no outcome to
+            # give; only what the agent submits itself is held to this.
+            return {"content": [{"type": "text", "text": "summary rejected: outcome is required for triage runs"}],
+                    "is_error": True}
         target.write_text(summary.model_dump_json(indent=2))
         return {"content": [{"type": "text", "text": f"recorded {target}"}]}
 
