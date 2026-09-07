@@ -61,6 +61,11 @@ agent:
   knowledge_dir: ./docs/triage      # consumer-supplied knowledge
   knowledge_size_warn_kb: 64
 
+fix:
+  branch_prefix: tedsbot/            # fix branches are <prefix><TICKET-KEY>
+  # test_command: uv run pytest -q   # when set, the agent runs it and reports the real result
+  ci_wait_minutes: 0                 # >0: after the PR opens, wait for CI and hand red results back
+  ci_poll_seconds: 30
+
 worker:
   interval_seconds: 900
-  branch_prefix: tedsbot/

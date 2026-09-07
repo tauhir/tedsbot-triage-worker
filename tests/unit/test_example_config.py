@@ -18,3 +18,4 @@ def test_example_config_validates(tmp_path: Path, checkout: Path, env_tokens: No
     cfg = load_config(p)
     assert cfg.tickets.project == "APP" and cfg.errors.org == "example-org"
     assert "example" in cfg.tickets.url
+    assert cfg.fix.branch_prefix == "tedsbot/"

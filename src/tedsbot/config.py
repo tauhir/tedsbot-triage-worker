@@ -148,7 +148,13 @@ class AgentConfig(_Strict):
 
 class WorkerConfig(_Strict):
     interval_seconds: int = 900
+
+
+class FixConfig(_Strict):
     branch_prefix: str = "tedsbot/"
+    test_command: str | None = None
+    ci_wait_minutes: int = 0
+    ci_poll_seconds: int = 30
 
 
 class Config(_Strict):
@@ -158,6 +164,7 @@ class Config(_Strict):
     logs: LogsConfig | None = None
     notify: NotifyConfig
     agent: AgentConfig = Field(default_factory=AgentConfig)
+    fix: FixConfig = Field(default_factory=FixConfig)
     worker: WorkerConfig = Field(default_factory=WorkerConfig)
 
     @field_validator("repo")

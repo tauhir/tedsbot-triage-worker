@@ -95,3 +95,23 @@ def test_new_error_first_seen_defaults_when_pass_is_overridden() -> None:
 
 def test_explicit_new_error_first_seen_is_kept() -> None:
     assert PollConfig(new_error=PassConfig(first_seen="-6h")).new_error.first_seen == "-6h"
+
+
+def test_fix_defaults(tmp_path: Path, config_dict: dict, env_tokens: None) -> None:
+    cfg = load_config(_write(tmp_path, config_dict))
+    assert cfg.fix.branch_prefix == "tedsbot/"
+    assert cfg.fix.test_command is None
+    assert cfg.fix.ci_wait_minutes == 0 and cfg.fix.ci_poll_seconds == 30
+
+
+def test_fix_section_is_configurable(tmp_path: Path, config_dict: dict, env_tokens: None) -> None:
+    config_dict["fix"] = {"branch_prefix": "bot/", "test_command": "uv run pytest -q", "ci_wait_minutes": 20, "ci_poll_seconds": 15}
+    cfg = load_config(_write(tmp_path, config_dict))
+    assert cfg.fix.branch_prefix == "bot/" and cfg.fix.test_command == "uv run pytest -q"
+    assert cfg.fix.ci_wait_minutes == 20 and cfg.fix.ci_poll_seconds == 15
+
+
+def test_worker_branch_prefix_is_rejected(tmp_path: Path, config_dict: dict, env_tokens: None) -> None:
+    config_dict["worker"] = {"branch_prefix": "x/"}
+    with pytest.raises(ConfigError, match="worker.branch_prefix"):
+        load_config(_write(tmp_path, config_dict))
