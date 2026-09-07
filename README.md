@@ -315,10 +315,10 @@ headline:
 | `CI green` | Fix passed CI: ready for review | The PR's checks all passed during the watch window. |
 | `CI red, handed back` | Fix failed CI: handed back | A check failed during the watch window. The ticket and Slack both name the failing checks. |
 | `blocked` | Fix blocked: needs a decision | The agent needs a human choice it cannot make on its own and asked on the ticket instead of guessing. |
-| `already open` | Fix already in progress | A PR for this branch already existed. No new work happened. |
+| `already open` | Fix already in progress | The agent implemented the fix and pushed the branch, but a pull request for it already existed, so no new PR was opened. |
 | `gate refused` | Fix not started: precondition failed | One of the three gates above failed before the agent ran. |
 
-### Troubleshooting
+## Troubleshooting
 
 | Symptom | Cause | Fix |
 |---|---|---|
@@ -341,7 +341,7 @@ Each run directory holds `prompt.md` (what the agent was told), `transcript.json
 
 Run directories are never pruned, and a transcript holds whatever the agent read: full Sentry event payloads (which can carry request data and user identifiers) and the contents of source files. Treat `~/.tedsbot/runs` as sensitive, keep it on the worker host, and age it out yourself if your retention policy needs that.
 
-In milestone 1 the rule that triage never moves a ticket past `tickets.statuses.triage_target` is prompt-enforced only: nothing re-reads the ticket's status after the run to confirm the agent obeyed. The automated post-run status re-read arrives with the worker loop in milestone 2, so until then spot-check the transitions on early runs.
+The rule that triage never moves a ticket past `tickets.statuses.triage_target` is mostly prompt-enforced, with one automated check behind it. After a triage run whose outcome is `new_ticket` or `regression`, the worker re-reads the ticket's status and posts a Slack warning if the agent moved it past the triage target. Duplicate and already-advanced tickets are not checked, because the agent leaves their status alone by design, so a check there would be a false positive rather than a safeguard.
 
 ### Security notes
 The agent subprocess inherits the worker process's full environment — the

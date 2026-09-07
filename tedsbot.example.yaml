@@ -63,7 +63,7 @@ agent:
 
 fix:
   branch_prefix: tedsbot/            # fix branches are <prefix><TICKET-KEY>
-  # test_command: uv run pytest -q   # when set, the agent runs it and reports the real result; unset means it says tests could not run
+  # test_command: uv run pytest -q   # when set, the agent runs it and reports the real result. Unset, it says tests could not run
   ci_wait_minutes: 0                 # >0: after the PR opens, wait for CI and hand red results back
   ci_poll_seconds: 30                # how often to poll `gh pr checks` while waiting
 

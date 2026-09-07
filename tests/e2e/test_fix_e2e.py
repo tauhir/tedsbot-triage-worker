@@ -67,8 +67,8 @@ def test_fix_opens_draft_pr_and_summary() -> None:
         run_dir = _new_run_dir(before)
         summary = json.loads((run_dir / "summary.resolved.json").read_text())
         assert summary["status"] in ("draft PR opened", "CI green", "CI red, handed back")
-        pr_url = summary["pr_url"]
-        assert pr_url
+        pr_url = summary.get("pr_url")
+        assert pr_url, f"no pr_url in summary: {summary}"
     finally:
         if pr_url:
             cleanup = subprocess.run(
