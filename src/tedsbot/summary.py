@@ -6,10 +6,10 @@ import json
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, get_args
 
 from claude_agent_sdk import create_sdk_mcp_server, tool
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError, model_validator
 
 from tedsbot import __version__
 from tedsbot.providers.base import McpServer
@@ -19,6 +19,10 @@ RunKind = Literal["triage_sentry", "triage_ticket", "fix"]
 Outcome = Literal[
     "new_ticket", "regression", "duplicate", "not_a_bug", "analysed_existing", "insufficient_repro",
 ]
+FixStatus = Literal[
+    "draft PR opened", "blocked", "already open", "gate refused", "CI green", "CI red, handed back",
+]
+FIX_STATUSES = list(get_args(FixStatus))
 
 
 class RunSummary(BaseModel):
@@ -37,6 +41,12 @@ class RunSummary(BaseModel):
     first_seen: str | None = None
     last_seen: str | None = None
     ok: bool
+
+    @model_validator(mode="after")
+    def _check_fix_status(self) -> RunSummary:
+        if self.kind == "fix" and self.status is not None and self.status not in FIX_STATUSES:
+            raise ValueError(f"status must be one of {FIX_STATUSES}")
+        return self
 
 
 FALLBACK_HEADLINE_MAX = 160
@@ -106,6 +116,15 @@ _HEADERS: dict[tuple[str, str], str] = {
     ("insufficient_repro", "*"): "Bug report needs more detail",
 }
 
+_FIX_HEADERS: dict[str, tuple[str, str, str]] = {
+    "draft PR opened": ("🔧", "Draft PR opened: ready for review", "Review the PR. Merge and QA stay with a human."),
+    "CI green": ("✅", "Fix passed CI: ready for review", "Review the PR. Merge and QA stay with a human."),
+    "CI red, handed back": ("❌", "Fix failed CI: handed back", "A developer reads the failing checks on the PR and the ticket comment, then fixes or closes it."),
+    "blocked": ("⏸", "Fix blocked: needs a decision", "Answer the question in the ticket comment, then re-approve."),
+    "already open": ("↩", "Fix already in progress", "No action. The existing PR is linked on the ticket."),
+    "gate refused": ("🚫", "Fix not started: precondition failed", "Fix the precondition named above and re-run."),
+}
+
 
 def _next_action(outcome: str | None, tier: str | None, approve_status: str) -> str:
     if outcome in ("duplicate", "not_a_bug"):
@@ -159,6 +178,17 @@ def slack_line(s: RunSummary, run_dir: Path, approve_status: str = "the approval
             lines.append(s.ticket_url)
         lines.append(f"Run dir: {run_dir}")
         return "\n".join(lines)
+    if s.kind == "fix":
+        emoji, header, nxt = _FIX_HEADERS.get(s.status or "", ("🔧", "Fix run", "See the ticket."))
+        ticket = f"<{s.ticket_url}|{s.ticket}>" if s.ticket_url and s.ticket else (s.ticket or "?")
+        lines = [f"*{emoji} {header}*", f"*{ticket}*" + (f" {_plain(s.title)}" if s.title else "")]
+        if s.tldr:
+            lines.append(f"*What happened:* {_plain(s.tldr)}")
+        if s.pr_url:
+            lines.append(f"*PR:* {s.pr_url}")
+        lines.append(f"*Technical:* {_plain(s.headline)}")
+        lines.append(f"*Next:* {nxt}")
+        return "\n".join(lines)
     tier = s.recommendation or s.status or "✅"
     header = _HEADERS.get((s.outcome or "", tier)) or _HEADERS.get((s.outcome or "", "*")) or "Triage result"
     ticket = f"<{s.ticket_url}|{s.ticket}>" if s.ticket_url and s.ticket else (s.ticket or "?")
@@ -181,7 +211,7 @@ SUMMARY_SCHEMA: dict[str, Any] = {
         "ticket": {"type": ["string", "null"], "description": "Ticket key, e.g. APP-123"},
         "ticket_url": {"type": ["string", "null"]},
         "recommendation": {"type": ["string", "null"], "enum": ["🟢", "🟡", "⚪", "🔴", None]},
-        "status": {"type": ["string", "null"], "description": "Fix runs only, e.g. 'draft PR opened', 'blocked'"},
+        "status": {"type": ["string", "null"], "enum": [*FIX_STATUSES, None], "description": "Fix runs only, e.g. 'draft PR opened', 'blocked'"},
         "pr_url": {"type": ["string", "null"]},
         "outcome": {"type": "string", "enum": ["new_ticket", "regression", "duplicate", "not_a_bug", "analysed_existing", "insufficient_repro"],
                     "description": "new_ticket: created a ticket; regression: created a ticket linked to a Done one; duplicate: commented on an open ticket; not_a_bug: commented on a Won't Do ticket; analysed_existing: analysed a reported ticket; insufficient_repro: asked the reporter for details"},
@@ -194,7 +224,7 @@ SUMMARY_SCHEMA: dict[str, Any] = {
         "tldr": {"type": "string", "maxLength": 320, "description": "At most two plain-English sentences (under 320 characters) for non-engineers: what broke for users, why, what happens next. No code, no file paths, no identifiers."},
         "ok": {"type": "boolean"},
     },
-    "required": ["kind", "headline", "tldr", "outcome", "ok"],
+    "required": ["kind", "headline", "tldr", "ok"],
 }
 
 

@@ -46,3 +46,16 @@ async def test_unknown_outcome_is_rejected(tmp_path: Path) -> None:
     server = build_summary_server(tmp_path)
     result = await server.tool.handler({"kind": "triage_sentry", "headline": "h", "tldr": "t", "ok": True, "outcome": "whatever"})
     assert result["is_error"] is True and "outcome" in result["content"][0]["text"]
+
+
+async def test_fix_submission_without_outcome_is_accepted(tmp_path: Path) -> None:
+    server = build_summary_server(tmp_path)
+    result = await server.tool.handler({"kind": "fix", "ticket": "APP-7", "status": "draft PR opened", "pr_url": "https://g/pull/1",
+                                        "headline": "h", "tldr": "t", "ok": True})
+    assert result.get("is_error") is not True
+
+
+async def test_fix_submission_with_unknown_status_is_rejected(tmp_path: Path) -> None:
+    server = build_summary_server(tmp_path)
+    result = await server.tool.handler({"kind": "fix", "status": "done-ish", "headline": "h", "tldr": "t", "ok": True})
+    assert result["is_error"] is True and "status" in result["content"][0]["text"]

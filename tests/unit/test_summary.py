@@ -129,3 +129,29 @@ def test_fallback_recovers_ticket_key_from_text(tmp_path: Path) -> None:
     s = read_summary(tmp_path / "missing.json", "triage_sentry", text, ticket_pattern=r"\bAPP-\d+\b", ticket_url_base="https://example.atlassian.net/browse")
     assert s.ticket == "APP-419" and s.ticket_url == "https://example.atlassian.net/browse/APP-419"
     assert s.recommendation is None and s.ok is False
+
+
+def test_slack_message_for_fix_run_draft_pr(tmp_path: Path) -> None:
+    s = RunSummary(kind="fix", ticket="APP-7", ticket_url="https://j/APP-7", status="draft PR opened",
+                   pr_url="https://github.com/example-org/example-app/pull/12", title="Chart filter crashes on load",
+                   headline="Guard querySelectorAll against a null container in charts.js:41; test added",
+                   tldr="The admin chart page no longer crashes when the filter box is empty. A pull request is ready for review.", ok=True)
+    assert slack_line(s, tmp_path, approve_status="Approved For Fix").splitlines() == [
+        "*🔧 Draft PR opened: ready for review*",
+        "*<https://j/APP-7|APP-7>* Chart filter crashes on load",
+        "*What happened:* The admin chart page no longer crashes when the filter box is empty. A pull request is ready for review.",
+        "*PR:* https://github.com/example-org/example-app/pull/12",
+        "*Technical:* Guard querySelectorAll against a null container in charts.js:41; test added",
+        "*Next:* Review the PR. Merge and QA stay with a human.",
+    ]
+
+
+def test_slack_message_for_fix_statuses(tmp_path: Path) -> None:
+    expectations = {
+        "CI green": ("✅", "Fix passed CI"), "CI red, handed back": ("❌", "handed back"),
+        "blocked": ("⏸", "needs a decision"), "already open": ("↩", "already in progress"), "gate refused": ("🚫", "precondition failed"),
+    }
+    for status, (emoji, phrase) in expectations.items():
+        s = RunSummary(kind="fix", ticket="APP-7", status=status, headline="h", tldr="t", ok=True)
+        first = slack_line(s, tmp_path).splitlines()[0]
+        assert first.startswith(f"*{emoji} ") and phrase in first, status
