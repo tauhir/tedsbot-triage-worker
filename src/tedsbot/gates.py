@@ -98,7 +98,28 @@ def no_open_pr_for(github_repo: str, branch: str, run: Runner = subprocess.run) 
         raise GateError(f"open PR already exists for {branch}: {open_prs[0].get('url')}")
 
 
+def _github_slug(url: str) -> str | None:
+    """The <owner>/<repo> slug of a GitHub remote URL, or None if it is not one."""
+    for prefix in ("https://github.com/", "git@github.com:"):
+        if url.startswith(prefix):
+            return url[len(prefix):].removesuffix("/").removesuffix(".git")
+    return None
+
+
+def origin_matches(path: Path, github_repo: str, run: Runner = subprocess.run) -> None:
+    """Refuse a checkout whose origin is not the repository the config names.
+
+    Everything else in a fix run trusts repo.github: the PR is opened against
+    it, and the gate that looks for an existing PR queries it. A clone of a
+    different repository would push a branch somewhere nobody is watching.
+    """
+    url = _git(path, "remote", "get-url", "origin", run=run)
+    if _github_slug(url) != github_repo:
+        raise GateError(f"origin is '{url}', expected github.com/{github_repo}")
+
+
 def run_fix_gates(cfg: Config, status_of: Callable[[str], str], key: str, branch: str, run: Runner = subprocess.run) -> None:
     checkout_is_clean_on(cfg.repo.path, cfg.repo.base_branch, run=run)
     ticket_is_in(status_of, key, cfg.tickets.statuses.fix_approved)
     no_open_pr_for(cfg.repo.github, branch, run=run)
+    origin_matches(cfg.repo.path, cfg.repo.github, run=run)

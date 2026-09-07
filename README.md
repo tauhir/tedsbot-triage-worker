@@ -255,9 +255,9 @@ Approving a ticket is the only signal the fix stage acts on. There is no
 separate "start" step. Once the ticket is in the approved status, the run
 above gates, implements, and opens a draft PR in one pass.
 
-### The three gates
+### The four gates
 
-Before the agent runs, plain Python checks three preconditions and refuses
+Before the agent runs, plain Python checks four preconditions and refuses
 the run if any fail:
 
 | Gate | Refusal message |
@@ -265,9 +265,13 @@ the run if any fail:
 | The checkout is clean and on the base branch | `checkout <path> has uncommitted changes` or `checkout <path> is on '<branch>', expected '<base_branch>'` |
 | The ticket is in the approved status | `<KEY> is in '<status>', expected '<fix_approved>'` |
 | No PR is already open for the fix branch | `open PR already exists for <branch>: <url>` or `gh pr list failed: <error>` |
+| The checkout's `origin` is `repo.github` | `origin is '<url>', expected github.com/<slug>` |
 
 A refused gate never starts the agent. It writes a `gate refused` summary and
-posts it to Slack with the refusal message as the technical line.
+posts it to Slack with the refusal message as the technical line. A gate that
+cannot be read at all, because Jira is down or `gh` returned something that is
+not JSON, refuses the run the same way, with `gate could not be evaluated` in
+the technical line.
 
 ### Branch, tests, and the fix
 
@@ -328,7 +332,7 @@ headline:
 | `CI red, handed back` | Fix failed CI: handed back | A check failed during the watch window. The ticket and Slack both name the failing checks. |
 | `blocked` | Fix blocked: needs a decision | The agent needs a human choice it cannot make on its own and asked on the ticket instead of guessing. |
 | `already open` | Fix already in progress | The agent implemented the fix and pushed the branch, but a pull request for it already existed, so no new PR was opened. |
-| `gate refused` | Fix not started: precondition failed | One of the three gates above failed before the agent ran. |
+| `gate refused` | Fix not started: precondition failed | One of the four gates above failed, or could not be evaluated, before the agent ran. |
 
 ## Troubleshooting
 

@@ -13,6 +13,7 @@ from tedsbot.errors import GateError
 from tedsbot.gates import (
     checkout_is_clean_on,
     no_open_pr_for,
+    origin_matches,
     restore_checkout,
     run_fix_gates,
     ticket_is_in,
@@ -95,9 +96,10 @@ def _mixed_run(gh_stdout: str = "[]"):
     return run
 
 
-def test_run_fix_gates_runs_all_three_in_order(
+def test_run_fix_gates_runs_all_four_in_order(
     checkout: Path, config_dict: dict, env_tokens: None, tmp_path: Path
 ) -> None:
+    _git(checkout, "remote", "add", "origin", "https://github.com/example-org/example-app.git")
     cfg = load_config(_write(tmp_path, config_dict))
     run = _mixed_run()
     status_calls: list[str] = []
@@ -169,3 +171,33 @@ def test_restore_checkout_leaves_dirty_tree_alone(checkout: Path) -> None:
 def test_invalid_gh_json_is_a_gate_error() -> None:
     with pytest.raises(GateError, match="gh pr list returned invalid JSON: <html>"):
         no_open_pr_for("example-org/example-app", "tedsbot/APP-1", run=_fake_gh("<html>gateway timeout</html>"))
+
+
+def test_origin_gate_accepts_the_https_and_ssh_forms(checkout: Path) -> None:
+    _git(checkout, "remote", "add", "origin", "https://github.com/example-org/example-app.git")
+    for url in ("https://github.com/example-org/example-app.git",
+                "https://github.com/example-org/example-app",
+                "git@github.com:example-org/example-app.git"):
+        _git(checkout, "remote", "set-url", "origin", url)
+        origin_matches(checkout, "example-org/example-app")
+
+
+def test_origin_pointing_at_another_repo_is_refused(checkout: Path) -> None:
+    _git(checkout, "remote", "add", "origin", "https://github.com/someone-else/other-app.git")
+    with pytest.raises(GateError, match="origin is 'https://github.com/someone-else/other-app.git', "
+                                        "expected github.com/example-org/example-app"):
+        origin_matches(checkout, "example-org/example-app")
+
+
+def test_missing_origin_is_refused(checkout: Path) -> None:
+    with pytest.raises(GateError, match="git remote get-url origin failed"):
+        origin_matches(checkout, "example-org/example-app")
+
+
+def test_run_fix_gates_checks_the_origin(
+    checkout: Path, config_dict: dict, env_tokens: None, tmp_path: Path
+) -> None:
+    _git(checkout, "remote", "add", "origin", "https://github.com/someone-else/other-app.git")
+    cfg = load_config(_write(tmp_path, config_dict))
+    with pytest.raises(GateError, match="expected github.com/example-org/example-app"):
+        run_fix_gates(cfg, lambda key: "Approved For Fix", "APP-1", "tedsbot/APP-1", run=_mixed_run())
