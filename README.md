@@ -278,7 +278,10 @@ the technical line.
 ### Branch, tests, and the fix
 
 `fix.branch_prefix` names the branch the agent works on: `<prefix><TICKET-KEY>`,
-for example `tedsbot/APP-42`. `fix.test_command`, when set, is the command
+for example `tedsbot/APP-42`. (It used to be `worker.branch_prefix`; if you
+wrote a config before milestone 2a, move the key. `worker:` now holds only
+`interval_seconds`, and an unknown key there is a config error, not a
+silently ignored line.) `fix.test_command`, when set, is the command
 the agent runs before opening the PR. It reports the real outcome, the exact
 command and its summary line, in both the PR body and the run summary. When
 `fix.test_command` is unset, the agent does not run tests and says so in the
@@ -301,6 +304,11 @@ many minutes:
 - **The wait times out with no verdict:** the run summary and Slack message
   are left as they were when the PR opened. Nothing is reported as green or
   red because nothing was confirmed either way.
+
+A red-CI hand-back still exits `0`. The run did what it was asked: it
+implemented the fix and opened the PR. CI is a separate signal, carried by
+the summary status, the ticket comment and the Slack message, not by the
+worker's exit code.
 
 ### GitHub identity
 
@@ -333,7 +341,7 @@ headline:
 | `CI green` | Fix passed CI: ready for review | The PR's checks all passed during the watch window. |
 | `CI red, handed back` | Fix failed CI: handed back | A check failed during the watch window. The ticket and Slack both name the failing checks. |
 | `blocked` | Fix blocked: needs a decision | The agent needs a human choice it cannot make on its own and asked on the ticket instead of guessing. |
-| `already open` | Fix already in progress | The agent implemented the fix and pushed the branch, but a pull request for it already existed, so no new PR was opened. |
+| `already open` | Fix already in progress | The agent implemented the fix and pushed the branch, but a pull request for it already existed, so no new PR was opened. Reachable only when a PR appears between the open-PR gate and `gh pr create`; otherwise the gate refuses the run first. |
 | `gate refused` | Fix not started: precondition failed | One of the four gates above failed, or could not be evaluated, before the agent ran. |
 
 ## Troubleshooting
