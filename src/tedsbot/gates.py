@@ -88,7 +88,12 @@ def no_open_pr_for(github_repo: str, branch: str, run: Runner = subprocess.run) 
     result = run(cmd, capture_output=True, text=True, check=False)
     if result.returncode != 0:
         raise GateError(f"gh pr list failed: {result.stderr.strip()}")
-    open_prs: list[dict[str, Any]] = json.loads(result.stdout or "[]")
+    try:
+        open_prs: list[dict[str, Any]] = json.loads(result.stdout or "[]")
+    except json.JSONDecodeError:
+        # A proxy error page or a gh notice on stdout is a gate that could not
+        # be read, which must refuse the run rather than crash it.
+        raise GateError(f"gh pr list returned invalid JSON: {result.stdout[:80]}") from None
     if open_prs:
         raise GateError(f"open PR already exists for {branch}: {open_prs[0].get('url')}")
 

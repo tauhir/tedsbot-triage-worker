@@ -164,3 +164,8 @@ def test_restore_checkout_leaves_dirty_tree_alone(checkout: Path) -> None:
                           capture_output=True, text=True, check=True)
     assert head.stdout.strip() == "tedsbot/APP-1"
     assert (checkout / "scratch.txt").exists()
+
+
+def test_invalid_gh_json_is_a_gate_error() -> None:
+    with pytest.raises(GateError, match="gh pr list returned invalid JSON: <html>"):
+        no_open_pr_for("example-org/example-app", "tedsbot/APP-1", run=_fake_gh("<html>gateway timeout</html>"))

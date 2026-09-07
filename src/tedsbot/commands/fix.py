@@ -8,6 +8,8 @@ from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Any
 
+import httpx
+
 from tedsbot import registry, runner
 from tedsbot.ci import CiVerdict, watch_ci
 from tedsbot.config import Config
@@ -66,9 +68,12 @@ async def fix(cfg: Config, key: str, *, run_fn: RunFn | None = None, home: Path 
     branch = f"{cfg.fix.branch_prefix}{key}"
     try:
         (gates_fn or _gates)(cfg, tickets.status_of, key, branch)
-    except GateError as exc:
+    except (GateError, ProviderError, httpx.HTTPError, ValueError) as exc:
+        # A gate that cannot be evaluated refuses the run for the same reason a
+        # gate that fails does: nothing has confirmed the fix is safe to start.
+        headline = str(exc) if isinstance(exc, GateError) else f"gate could not be evaluated: {exc}"
         summary = RunSummary(kind="fix", ticket=key, ticket_url=f"{cfg.tickets.url}/browse/{key}", status="gate refused",
-                             headline=str(exc)[:300], tldr="The fix did not start because a precondition failed.", ok=False)
+                             headline=headline[:300], tldr="The fix did not start because a precondition failed.", ok=False)
         _write(summary, run_dir)
         _post(notifier, summary, run_dir, cfg)
         return summary, run_dir

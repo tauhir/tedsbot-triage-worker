@@ -153,3 +153,22 @@ async def test_dirty_checkout_note_is_posted_and_logged(cfg, temp_home: Path, ca
                   watch_fn=lambda url, w, p: CiVerdict("passed"), tickets=FakeTickets(), notifier=notifier)
     assert any("uncommitted changes" in post for post in notifier.posts)
     assert any("uncommitted changes" in record.getMessage() for record in caplog.records)
+
+
+async def test_gate_provider_error_is_reported_not_raised(cfg, temp_home: Path) -> None:
+    """A ticketing outage while a gate is being read is a refusal to report, not a traceback."""
+    notifier = FakeNotifier()
+    started = []
+
+    async def run_fn(c, spec, run_dir):
+        started.append(1)
+
+    def gates(c, status_of, key, branch):
+        raise ProviderError("jira 503")
+
+    summary, run_dir = await fix(cfg, "APP-7", run_fn=run_fn, gates_fn=gates, restore_fn=lambda p, b: None,
+                                 tickets=FakeTickets(), notifier=notifier)
+    assert not started and summary.ok is False and summary.status == "gate refused"
+    assert "gate could not be evaluated" in summary.headline and "jira 503" in summary.headline
+    assert notifier.posts and "precondition failed" in notifier.posts[0]
+    assert (run_dir / "summary.resolved.json").exists()
