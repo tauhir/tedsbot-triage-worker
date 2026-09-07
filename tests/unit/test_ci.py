@@ -63,3 +63,12 @@ def test_empty_polls_must_be_consecutive_for_none() -> None:
     run = _gh_sequence([], [{"name": "tests", "bucket": "pending"}], [], [{"name": "tests", "bucket": "pass"}])
     v = watch_ci("u", wait_minutes=5, poll_seconds=1, run=run, sleep=lambda s: None, clock=_clock())
     assert v.state == "passed"
+
+
+def test_no_checks_reported_exit_is_none() -> None:
+    """gh exits non-zero when a PR has no checks at all, which is a verdict, not a failure."""
+    def run(cmd, **kwargs):
+        return subprocess.CompletedProcess(cmd, 1, stdout="", stderr="no checks reported on the 'x' branch")
+
+    v = watch_ci("u", wait_minutes=5, poll_seconds=1, run=run, sleep=lambda s: None, clock=_clock())
+    assert v.state == "none"

@@ -24,6 +24,11 @@ class CiVerdict:
 def _checks(pr_url: str, run: Runner) -> list[dict] | None:
     result = run(["gh", "pr", "checks", pr_url, "--json", "name,bucket"], capture_output=True, text=True, check=False)
     if result.returncode != 0:
+        # A pull request with no checks at all is a verdict, not a transport
+        # failure: gh says so on stderr and exits non-zero rather than
+        # printing an empty list.
+        if "no checks reported" in (result.stderr or "").lower():
+            return []
         return None
     try:
         return list(json.loads(result.stdout or "[]"))

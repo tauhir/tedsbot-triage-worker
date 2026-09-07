@@ -47,7 +47,7 @@ most of it collecting tokens.
 |---|---|---|
 | Python 3.12+ and [uv](https://docs.astral.sh/uv/) | runs the worker | `uv --version` |
 | Node.js 18+ | the Sentry MCP server is an npm package run with `npx` | `node --version` |
-| [GitHub CLI](https://cli.github.com) | the fix stage opens draft PRs with `gh` | `gh --version` |
+| [GitHub CLI](https://cli.github.com) 2.20+ | the fix stage opens draft PRs with `gh`, and the CI watch needs `pr checks --json` and its `bucket` field, added in 2.20 | `gh --version` |
 | A local checkout of the repository you want triaged | the agent reads code and git history there | `git -C /path/to/checkout log --oneline -1` |
 
 The checkout must have full history: run `git fetch --unshallow` if it was a
@@ -342,6 +342,7 @@ headline:
 | `worker: not implemented yet` | the worker loop is a later milestone | wait for it, or run `fix` and `triage` by hand or from cron |
 | `gate refused: checkout <path> has uncommitted changes` | the checkout is shared with other work | give the worker its own clean clone on the base branch |
 | `gh pr list failed: not logged in` | `gh` has no credential in the worker's environment | set `GH_TOKEN` or run `gh auth login` where the worker runs |
+| CI watch always times out | `gh` predates 2.20, so `pr checks --json` is unavailable and every poll fails | upgrade `gh` to 2.20 or newer |
 | `Fix blocked: needs a decision` | the agent found a choice it should not make alone | answer the `[tedsbot]` question on the ticket, then re-approve |
 | `config error: environment variable X is not set` | the env file was not loaded into this shell | `set -a; . ~/.config/tedsbot/env; set +a` |
 
