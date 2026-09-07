@@ -1,6 +1,7 @@
 # ABOUTME: Tests the fix-run gates: clean checkout on the base branch, ticket in the
 # ABOUTME: approved status, and no open PR for the branch (gh is injected, never real).
 import json
+import logging
 import subprocess
 from pathlib import Path
 
@@ -12,6 +13,7 @@ from tedsbot.errors import GateError
 from tedsbot.gates import (
     checkout_is_clean_on,
     no_open_pr_for,
+    restore_checkout,
     run_fix_gates,
     ticket_is_in,
 )
@@ -132,3 +134,33 @@ def test_detached_head_is_refused(checkout: Path) -> None:
     _git(checkout, "checkout", "-q", "--detach")
     with pytest.raises(GateError, match="on 'HEAD', expected 'main'"):
         checkout_is_clean_on(checkout, "main")
+
+
+def test_restore_checkout_returns_to_base_when_clean(checkout: Path, caplog) -> None:
+    _git(checkout, "checkout", "-q", "-b", "tedsbot/APP-1")
+    (checkout / "fix.txt").write_text("fixed\n")
+    _git(checkout, "add", "-A")
+    _git(checkout, "commit", "-q", "-m", "fix")
+
+    with caplog.at_level(logging.ERROR, logger="tedsbot.gates"):
+        assert restore_checkout(checkout, "main") is None
+
+    head = subprocess.run(["git", "-C", str(checkout), "rev-parse", "--abbrev-ref", "HEAD"],
+                          capture_output=True, text=True, check=True)
+    assert head.stdout.strip() == "main"
+    # The fixture checkout has no origin, so the fast-forward pull fails; a
+    # restore reports that through the log instead of raising.
+    assert any("pull --ff-only" in record.getMessage() for record in caplog.records)
+
+
+def test_restore_checkout_leaves_dirty_tree_alone(checkout: Path) -> None:
+    _git(checkout, "checkout", "-q", "-b", "tedsbot/APP-1")
+    (checkout / "scratch.txt").write_text("x")
+
+    note = restore_checkout(checkout, "main")
+
+    assert note == "checkout left on 'tedsbot/APP-1' with uncommitted changes"
+    head = subprocess.run(["git", "-C", str(checkout), "rev-parse", "--abbrev-ref", "HEAD"],
+                          capture_output=True, text=True, check=True)
+    assert head.stdout.strip() == "tedsbot/APP-1"
+    assert (checkout / "scratch.txt").exists()

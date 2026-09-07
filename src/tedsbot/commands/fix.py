@@ -12,7 +12,7 @@ from tedsbot import registry, runner
 from tedsbot.ci import CiVerdict, watch_ci
 from tedsbot.config import Config
 from tedsbot.errors import GateError, ProviderError
-from tedsbot.gates import run_fix_gates
+from tedsbot.gates import restore_checkout, run_fix_gates
 from tedsbot.runner import FIX_TOOLS, RunSpec, new_run_dir
 from tedsbot.summary import RunSummary, slack_line
 
@@ -22,6 +22,7 @@ RunFn = Callable[[Config, RunSpec, Path], Awaitable[RunSummary]]
 _run: RunFn = runner.run
 _gates = run_fix_gates
 _watch = watch_ci
+_restore = restore_checkout
 
 
 def _ticketing(cfg: Config) -> Any:
@@ -41,11 +42,15 @@ def build_fix_spec(cfg: Config, key: str) -> RunSpec:
     )
 
 
-def _post(notifier: Any, summary: RunSummary, run_dir: Path, cfg: Config) -> None:
+def _post_text(notifier: Any, text: str) -> None:
     try:
-        notifier.post(slack_line(summary, run_dir, cfg.tickets.statuses.fix_approved))
+        notifier.post(text)
     except ProviderError:
         pass
+
+
+def _post(notifier: Any, summary: RunSummary, run_dir: Path, cfg: Config) -> None:
+    _post_text(notifier, slack_line(summary, run_dir, cfg.tickets.statuses.fix_approved))
 
 
 def _write(summary: RunSummary, run_dir: Path) -> None:
@@ -53,7 +58,8 @@ def _write(summary: RunSummary, run_dir: Path) -> None:
 
 
 async def fix(cfg: Config, key: str, *, run_fn: RunFn | None = None, home: Path | None = None,
-              gates_fn=None, watch_fn=None, tickets: Any = None, notifier: Any = None) -> tuple[RunSummary, Path]:
+              gates_fn=None, watch_fn=None, restore_fn=None, tickets: Any = None,
+              notifier: Any = None) -> tuple[RunSummary, Path]:
     run_dir = new_run_dir("fix", key, home)
     tickets = tickets or _ticketing(cfg)
     notifier = notifier or _notifier(cfg)
@@ -66,28 +72,36 @@ async def fix(cfg: Config, key: str, *, run_fn: RunFn | None = None, home: Path 
         _write(summary, run_dir)
         _post(notifier, summary, run_dir, cfg)
         return summary, run_dir
-    summary = await (run_fn or _run)(cfg, build_fix_spec(cfg, key), run_dir)
-    if summary.ok and summary.status == "draft PR opened" and summary.pr_url and cfg.fix.ci_wait_minutes > 0:
-        verdict: CiVerdict = (watch_fn or _watch)(summary.pr_url, cfg.fix.ci_wait_minutes, cfg.fix.ci_poll_seconds)
-        if verdict.state == "failed":
-            failing = ", ".join(verdict.failing) or "unknown checks"
-            try:
-                tickets.comment(key, f"[tedsbot] CI is red on {summary.pr_url}: {failing}. Handing back for a human to look at.")
-            except ProviderError as exc:
-                # The ticket comment is a courtesy; a human still needs the
-                # status update and the Slack post even if Jira is down.
-                log.error("failed to comment on %s: %s", key, exc)
-            summary = summary.model_copy(update={"status": "CI red, handed back", "headline": f"CI failed: {failing}. {summary.headline}"[:300]})
-        elif verdict.state == "passed":
-            summary = summary.model_copy(update={"status": "CI green"})
-        if summary.status in ("CI red, handed back", "CI green"):
-            _write(summary, run_dir)
-            _post(notifier, summary, run_dir, cfg)
+    try:
+        summary = await (run_fn or _run)(cfg, build_fix_spec(cfg, key), run_dir)
+        if summary.ok and summary.status == "draft PR opened" and summary.pr_url and cfg.fix.ci_wait_minutes > 0:
+            verdict: CiVerdict = (watch_fn or _watch)(summary.pr_url, cfg.fix.ci_wait_minutes, cfg.fix.ci_poll_seconds)
+            if verdict.state == "failed":
+                failing = ", ".join(verdict.failing) or "unknown checks"
+                try:
+                    tickets.comment(key, f"[tedsbot] CI is red on {summary.pr_url}: {failing}. Handing back for a human to look at.")
+                except ProviderError as exc:
+                    # The ticket comment is a courtesy; a human still needs the
+                    # status update and the Slack post even if Jira is down.
+                    log.error("failed to comment on %s: %s", key, exc)
+                summary = summary.model_copy(update={"status": "CI red, handed back", "headline": f"CI failed: {failing}. {summary.headline}"[:300]})
+            elif verdict.state == "passed":
+                summary = summary.model_copy(update={"status": "CI green"})
+            if summary.status in ("CI red, handed back", "CI green"):
+                _write(summary, run_dir)
+                _post(notifier, summary, run_dir, cfg)
+    finally:
+        # The run leaves the checkout on the bot branch, which the clean-checkout
+        # gate would refuse next time, so it is restored however the run ended.
+        note = (restore_fn or _restore)(cfg.repo.path, cfg.repo.base_branch)
+        if note:
+            log.warning("%s", note)
+            _post_text(notifier, f"*Note:* {note}")
     return summary, run_dir
 
 
 def main_fix(cfg: Config, key: str) -> int:
     summary, run_dir = asyncio.run(fix(cfg, key, run_fn=_run, gates_fn=_gates, watch_fn=_watch,
-                                       tickets=_ticketing(cfg), notifier=_notifier(cfg)))
+                                       restore_fn=_restore, tickets=_ticketing(cfg), notifier=_notifier(cfg)))
     print(slack_line(summary, run_dir, cfg.tickets.statuses.fix_approved))
     return 0 if summary.ok else 1

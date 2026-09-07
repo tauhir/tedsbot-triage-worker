@@ -237,6 +237,18 @@ and then running:
 tedsbot -c ~/.config/tedsbot/tedsbot.yaml fix <TICKET-KEY>
 ```
 
+After every run, whether it opened a PR, was blocked, or crashed, the worker
+returns the clone to `repo.base_branch` and fast-forwards it with
+`git pull --ff-only`, so the next run meets its own clean-checkout gate. If the
+run left uncommitted changes behind, the worker touches nothing and says so in
+a Slack note instead. A run that is killed outright (the host reboots, someone
+sends SIGKILL) can still leave the clone on the bot branch; reset it by hand:
+
+```
+git -C /srv/checkouts/example-app checkout main
+git -C /srv/checkouts/example-app pull --ff-only
+```
+
 ### The approval flow
 
 Approving a ticket is the only signal the fix stage acts on. There is no

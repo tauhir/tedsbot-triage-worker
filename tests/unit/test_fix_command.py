@@ -1,6 +1,7 @@
 # ABOUTME: Tests the fix command orchestration with injected gates, run function,
 # ABOUTME: CI watch, ticketing and notifier; no agent, git, or gh is ever real.
 import json
+import logging
 from pathlib import Path
 
 import pytest
@@ -123,3 +124,32 @@ def test_cli_fix_exit_codes(tmp_path: Path, config_dict: dict, env_tokens: None,
     assert main(["-c", str(p), "fix", "APP-7"]) == 0
     assert "Draft PR opened" in capsys.readouterr().out
     assert main(["-c", str(tmp_path / "absent.yaml"), "fix", "APP-7"]) == 2
+
+
+async def test_fix_restores_checkout_after_run(cfg, temp_home: Path) -> None:
+    calls: list[tuple] = []
+
+    def restore(path, base_branch):
+        calls.append((path, base_branch))
+
+    await fix(cfg, "APP-7", run_fn=_draft(), gates_fn=lambda *a: None, restore_fn=restore,
+              watch_fn=lambda url, w, p: CiVerdict("passed"), tickets=FakeTickets(), notifier=FakeNotifier())
+    assert calls == [(cfg.repo.path, cfg.repo.base_branch)]
+
+    async def boom(c, spec, run_dir):
+        raise RuntimeError("agent exploded")
+
+    with pytest.raises(RuntimeError, match="agent exploded"):
+        await fix(cfg, "APP-7", run_fn=boom, gates_fn=lambda *a: None, restore_fn=restore,
+                  tickets=FakeTickets(), notifier=FakeNotifier())
+    assert calls == [(cfg.repo.path, cfg.repo.base_branch)] * 2
+
+
+async def test_dirty_checkout_note_is_posted_and_logged(cfg, temp_home: Path, caplog) -> None:
+    notifier = FakeNotifier()
+    with caplog.at_level(logging.WARNING, logger="tedsbot.commands.fix"):
+        await fix(cfg, "APP-7", run_fn=_draft(), gates_fn=lambda *a: None,
+                  restore_fn=lambda path, base: "checkout left on 'tedsbot/APP-7' with uncommitted changes",
+                  watch_fn=lambda url, w, p: CiVerdict("passed"), tickets=FakeTickets(), notifier=notifier)
+    assert any("uncommitted changes" in post for post in notifier.posts)
+    assert any("uncommitted changes" in record.getMessage() for record in caplog.records)
