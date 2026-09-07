@@ -11,7 +11,15 @@ from typing import Literal
 
 Runner = Callable[..., "subprocess.CompletedProcess[str]"]
 FAILING_BUCKETS = {"fail", "cancel"}
-PENDING_BUCKETS = {"pending"}
+# Anything neither failing nor finished is still running, including a bucket
+# gh grows later: reading an unknown value as success would report a green PR
+# on a check nobody has looked at.
+DONE_BUCKETS = {"pass", "skipping"}
+
+
+def _is_pending(check: dict) -> bool:
+    bucket = check.get("bucket")
+    return bucket not in FAILING_BUCKETS and bucket not in DONE_BUCKETS
 
 
 @dataclass
@@ -56,10 +64,10 @@ def watch_ci(
             else:
                 empty_polls = 0
                 failing = [c["name"] for c in checks if c.get("bucket") in FAILING_BUCKETS]
-                pending = [c["name"] for c in checks if c.get("bucket") in PENDING_BUCKETS]
+                pending = [c["name"] for c in checks if _is_pending(c)]
                 if not pending:
                     return CiVerdict("failed", failing) if failing else CiVerdict("passed")
         if clock() >= deadline:
-            pending = [c["name"] for c in (checks or []) if c.get("bucket") in PENDING_BUCKETS]
+            pending = [c["name"] for c in (checks or []) if _is_pending(c)]
             return CiVerdict("timeout", pending=pending)
         sleep(poll_seconds)

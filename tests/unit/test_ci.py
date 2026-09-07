@@ -72,3 +72,10 @@ def test_no_checks_reported_exit_is_none() -> None:
 
     v = watch_ci("u", wait_minutes=5, poll_seconds=1, run=run, sleep=lambda s: None, clock=_clock())
     assert v.state == "none"
+
+
+def test_unknown_bucket_counts_as_pending() -> None:
+    """A bucket gh adds later must not be read as success by a worker that predates it."""
+    run = _gh_sequence([{"name": "tests", "bucket": "neutral"}])
+    v = watch_ci("u", wait_minutes=1, poll_seconds=1, run=run, sleep=lambda s: None, clock=_clock(step=20.0))
+    assert v.state == "timeout" and v.pending == ["tests"]
