@@ -10,7 +10,7 @@ from tedsbot.ci import CiVerdict
 from tedsbot.cli import main
 from tedsbot.commands.fix import build_fix_spec, fix
 from tedsbot.config import load_config
-from tedsbot.errors import GateError
+from tedsbot.errors import GateError, ProviderError
 from tedsbot.runner import FIX_TOOLS
 from tedsbot.summary import RunSummary
 
@@ -83,6 +83,19 @@ async def test_red_ci_hands_back_with_comment_and_second_message(cfg, temp_home:
     assert tickets.comments and tickets.comments[0][1].startswith("[tedsbot] CI is red")
     assert any("handed back" in p for p in notifier.posts)
     assert json.loads((run_dir / "summary.resolved.json").read_text())["status"] == "CI red, handed back"
+
+
+async def test_red_ci_still_hands_back_when_comment_fails(cfg, temp_home: Path) -> None:
+    class FailingCommentTickets(FakeTickets):
+        def comment(self, key: str, body: str) -> None:
+            raise ProviderError("jira down")
+
+    notifier, tickets = FakeNotifier(), FailingCommentTickets()
+    summary, run_dir = await fix(cfg, "APP-7", run_fn=_draft(), gates_fn=lambda *a: None,
+                                 watch_fn=lambda url, w, p: CiVerdict("failed", ["tests"]), tickets=tickets, notifier=notifier)
+    assert summary.status == "CI red, handed back"
+    assert json.loads((run_dir / "summary.resolved.json").read_text())["status"] == "CI red, handed back"
+    assert any("handed back" in p for p in notifier.posts)
 
 
 async def test_green_ci_posts_second_message_without_comment(cfg, temp_home: Path) -> None:

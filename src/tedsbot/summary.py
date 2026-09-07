@@ -172,10 +172,12 @@ def _impact(s: RunSummary) -> str | None:
 
 def slack_line(s: RunSummary, run_dir: Path, approve_status: str = "the approval status") -> str:
     """Render the run as a Slack mrkdwn message: header, ticket, plain account, impact, technical, next step."""
-    # A fix run with a known status (e.g. "gate refused") always renders its
-    # own header below, even when ok is False: the status already says what
-    # happened, so the generic failure line would only obscure it.
-    if not s.ok and not (s.kind == "fix" and s.status in FIX_STATUSES):
+    # A gate-refused fix run always renders its own header below, even though
+    # ok is False: the status already says what happened, so the generic
+    # failure line would only obscure it. Every other ok=False fix summary
+    # (a crashed run, possibly with a status the agent had already submitted
+    # before the crash) keeps the generic failure line instead.
+    if not s.ok and not (s.kind == "fix" and s.status == "gate refused"):
         lines = [f"*⚠️ Triage run failed: {s.kind.replace('_', ' ')} {s.ticket or '?'}*", _plain(s.headline)]
         if s.ticket_url:
             lines.append(s.ticket_url)

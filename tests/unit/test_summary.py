@@ -155,3 +155,10 @@ def test_slack_message_for_fix_statuses(tmp_path: Path) -> None:
         s = RunSummary(kind="fix", ticket="APP-7", status=status, headline="h", tldr="t", ok=True)
         first = slack_line(s, tmp_path).splitlines()[0]
         assert first.startswith(f"*{emoji} ") and phrase in first, status
+
+
+def test_crashed_fix_run_with_leftover_status_renders_as_failure(tmp_path: Path) -> None:
+    s = RunSummary(kind="fix", ticket="APP-7", status="draft PR opened", pr_url="https://g/pull/1",
+                   headline="h (run failed: boom)", tldr="t", ok=False)
+    line = slack_line(s, tmp_path)
+    assert line.splitlines()[0].startswith("*⚠️ Triage run failed")

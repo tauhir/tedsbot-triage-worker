@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 from typing import Any
@@ -14,6 +15,8 @@ from tedsbot.errors import GateError, ProviderError
 from tedsbot.gates import run_fix_gates
 from tedsbot.runner import FIX_TOOLS, RunSpec, new_run_dir
 from tedsbot.summary import RunSummary, slack_line
+
+log = logging.getLogger(__name__)
 
 RunFn = Callable[[Config, RunSpec, Path], Awaitable[RunSummary]]
 _run: RunFn = runner.run
@@ -68,7 +71,12 @@ async def fix(cfg: Config, key: str, *, run_fn: RunFn | None = None, home: Path 
         verdict: CiVerdict = (watch_fn or _watch)(summary.pr_url, cfg.fix.ci_wait_minutes, cfg.fix.ci_poll_seconds)
         if verdict.state == "failed":
             failing = ", ".join(verdict.failing) or "unknown checks"
-            tickets.comment(key, f"[tedsbot] CI is red on {summary.pr_url}: {failing}. Handing back for a human to look at.")
+            try:
+                tickets.comment(key, f"[tedsbot] CI is red on {summary.pr_url}: {failing}. Handing back for a human to look at.")
+            except ProviderError as exc:
+                # The ticket comment is a courtesy; a human still needs the
+                # status update and the Slack post even if Jira is down.
+                log.error("failed to comment on %s: %s", key, exc)
             summary = summary.model_copy(update={"status": "CI red, handed back", "headline": f"CI failed: {failing}. {summary.headline}"[:300]})
         elif verdict.state == "passed":
             summary = summary.model_copy(update={"status": "CI green"})
