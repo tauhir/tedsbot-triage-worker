@@ -49,6 +49,7 @@ def watch_ci(
                 if empty_polls >= 2:
                     return CiVerdict("none")
             else:
+                empty_polls = 0
                 failing = [c["name"] for c in checks if c.get("bucket") in FAILING_BUCKETS]
                 pending = [c["name"] for c in checks if c.get("bucket") in PENDING_BUCKETS]
                 if not pending:

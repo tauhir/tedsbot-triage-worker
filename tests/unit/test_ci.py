@@ -57,3 +57,9 @@ def test_timeout_with_pending_checks() -> None:
 def test_gh_errors_are_retried_until_deadline() -> None:
     v = watch_ci("u", wait_minutes=1, poll_seconds=1, run=_gh_sequence(1), sleep=lambda s: None, clock=_clock(step=20.0))
     assert v.state == "timeout"
+
+
+def test_empty_polls_must_be_consecutive_for_none() -> None:
+    run = _gh_sequence([], [{"name": "tests", "bucket": "pending"}], [], [{"name": "tests", "bucket": "pass"}])
+    v = watch_ci("u", wait_minutes=5, poll_seconds=1, run=run, sleep=lambda s: None, clock=_clock())
+    assert v.state == "passed"
