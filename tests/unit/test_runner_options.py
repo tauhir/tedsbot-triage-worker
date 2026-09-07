@@ -7,7 +7,7 @@ import pytest
 import yaml
 
 from tedsbot.config import load_config
-from tedsbot.runner import TRIAGE_TOOLS, RunSpec, build_options, new_run_dir
+from tedsbot.runner import FIX_TOOLS, TRIAGE_TOOLS, RunSpec, build_options, new_run_dir
 
 
 @pytest.fixture
@@ -100,3 +100,16 @@ def test_new_run_dir_strips_query_and_handles_empty(temp_home: Path) -> None:
     assert with_query.name.endswith("-triage_sentry-12345")
     empty = new_run_dir("triage_sentry", "///")
     assert empty.name.endswith("-triage_sentry-run")
+
+
+def test_fix_options_allow_edit_tools_test_command_and_gh_token(cfg, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("GH_TOKEN", "ghp_x")
+    cfg.fix.test_command = "uv run pytest -q"
+    spec = RunSpec(kind="fix", prompt_name="fix", inputs={"ticket_key": "APP-7", "branch": "tedsbot/APP-7", "base_branch": "main",
+                   "github_repo": "example-org/example-app", "test_command": "uv run pytest -q"},
+                   max_turns=150, tools=list(FIX_TOOLS), include_edit_tools=True, run_id="APP-7")
+    options, prompt = build_options(cfg, spec, tmp_path)
+    assert "Edit" in options.allowed_tools and "Bash(gh:*)" in options.allowed_tools
+    assert "Bash(uv run pytest -q:*)" in options.allowed_tools
+    assert options.env["GH_TOKEN"] == "ghp_x"
+    assert "BRANCH: tedsbot/APP-7" in prompt

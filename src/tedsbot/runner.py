@@ -33,7 +33,8 @@ TRIAGE_TOOLS = [
     "Read", "Grep", "Glob",
     "Bash(git log:*)", "Bash(git show:*)", "Bash(git blame:*)", "Bash(git diff:*)",
 ]
-AUTH_ENV = ("ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN")
+FIX_TOOLS = ["Read", "Edit", "Write", "Grep", "Glob", "Bash(git:*)", "Bash(gh:*)"]
+AUTH_ENV = ("ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN", "GH_TOKEN")
 
 
 @dataclass
@@ -96,6 +97,8 @@ def build_options(cfg: Config, spec: RunSpec, run_dir: Path) -> tuple[ClaudeAgen
 
     mcp_servers: dict[str, Any] = {}
     allowed = list(spec.tools)
+    if spec.kind == "fix" and cfg.fix.test_command:
+        allowed.append(f"Bash({cfg.fix.test_command}:*)")
     env = {k: os.environ[k] for k in AUTH_ENV if k in os.environ}
     for server in [p.mcp_server() for p in providers] + [notifier.sdk_server()]:
         config = server.config

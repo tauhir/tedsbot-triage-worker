@@ -57,3 +57,18 @@ def test_missing_fact_fails_loudly() -> None:
 def test_unknown_template_fails() -> None:
     with pytest.raises(FileNotFoundError):
         render_prompt("nope", FACTS)
+
+
+def test_fix_prompt_substitutes_and_carries_rules() -> None:
+    text = render_prompt("fix", FACTS, ticket_key="APP-7", branch="tedsbot/APP-7", base_branch="main",
+                         github_repo="example-org/example-app", test_command="uv run pytest -q", summary_path="/x")
+    assert "TICKET_KEY: APP-7" in text and "BRANCH: tedsbot/APP-7" in text and "example-org/example-app" in text
+    assert "uv run pytest -q" in text and "customfield_10073" in text and "Code Review" in text
+    assert "Draft only" in text and "never merge" in text and "submit_summary" in text
+    assert '"status": "draft PR opened"' in text and "no em-dashes" in text
+
+
+def test_fix_prompt_without_test_command_says_tests_cannot_run() -> None:
+    text = render_prompt("fix", FACTS, ticket_key="APP-7", branch="b", base_branch="main",
+                         github_repo="o/r", test_command="none", summary_path="/x")
+    assert "cannot run the tests" in text
