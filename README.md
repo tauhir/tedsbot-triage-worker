@@ -32,7 +32,9 @@ reviewing the pull request.
                                           └─▶ Slack line per run
 
 Triage runs are read-only: Read, Grep, Glob, git history, plus the
-provider tools. The agent has no file-write permission; it records its result through an in-process `submit_summary` tool, which validates the schema and writes `~/.tedsbot/runs/<id>/summary.json`, alongside
+provider tools, with no file-write permission at all. A fix run may write
+inside the checkout and nowhere else. Neither can write its own run
+directory: both record the result through an in-process `submit_summary` tool, which validates the schema and writes `~/.tedsbot/runs/<id>/summary.json`, alongside
 `prompt.md`, and `transcript.jsonl`.
 
 ## Setup guide
