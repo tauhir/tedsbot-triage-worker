@@ -5,13 +5,26 @@ import subprocess
 from pathlib import Path
 
 import pytest
+import yaml
 
+from tedsbot.config import load_config
 from tedsbot.errors import GateError
-from tedsbot.gates import checkout_is_clean_on, no_open_pr_for, ticket_is_in
+from tedsbot.gates import (
+    checkout_is_clean_on,
+    no_open_pr_for,
+    run_fix_gates,
+    ticket_is_in,
+)
 
 
 def _git(repo: Path, *args: str) -> None:
     subprocess.run(["git", "-C", str(repo), "-c", "user.email=t@t", "-c", "user.name=t", *args], check=True, capture_output=True)
+
+
+def _write(tmp_path: Path, data: dict) -> Path:
+    p = tmp_path / "tedsbot.yaml"
+    p.write_text(yaml.safe_dump(data))
+    return p
 
 
 def test_clean_checkout_on_base_passes(checkout: Path) -> None:
@@ -63,3 +76,59 @@ def test_open_pr_is_refused_with_its_url() -> None:
 def test_gh_failure_is_a_gate_error() -> None:
     with pytest.raises(GateError, match="gh pr list failed"):
         no_open_pr_for("example-org/example-app", "tedsbot/APP-1", run=_fake_gh("", 1, "not logged in"))
+
+
+def _mixed_run(gh_stdout: str = "[]"):
+    """Delegate git commands to the real subprocess.run; fake only gh."""
+    calls: list[list[str]] = []
+
+    def run(cmd, **kwargs):
+        calls.append(list(cmd))
+        if cmd[0] == "git":
+            check = kwargs.pop("check", False)
+            return subprocess.run(cmd, check=check, **kwargs)
+        return subprocess.CompletedProcess(cmd, 0, stdout=gh_stdout, stderr="")
+
+    run.calls = calls  # type: ignore[attr-defined]
+    return run
+
+
+def test_run_fix_gates_runs_all_three_in_order(
+    checkout: Path, config_dict: dict, env_tokens: None, tmp_path: Path
+) -> None:
+    cfg = load_config(_write(tmp_path, config_dict))
+    run = _mixed_run()
+    status_calls: list[str] = []
+
+    def status_of(key: str) -> str:
+        status_calls.append(key)
+        return "Approved For Fix"
+
+    run_fix_gates(cfg, status_of, "APP-1", "tedsbot/APP-1", run=run)
+
+    assert status_calls == ["APP-1"]
+    gh_call = next(c for c in run.calls if c[0] == "gh")
+    assert "--head" in gh_call and "tedsbot/APP-1" in gh_call
+    assert "--repo" in gh_call and "example-org/example-app" in gh_call
+
+
+def test_run_fix_gates_short_circuits_on_dirty_checkout(
+    checkout: Path, config_dict: dict, env_tokens: None, tmp_path: Path
+) -> None:
+    (checkout / "scratch.txt").write_text("x")
+    cfg = load_config(_write(tmp_path, config_dict))
+    run = _mixed_run()
+
+    def status_of(key: str) -> str:
+        raise AssertionError("should not be called")
+
+    with pytest.raises(GateError, match="uncommitted"):
+        run_fix_gates(cfg, status_of, "APP-1", "tedsbot/APP-1", run=run)
+
+    assert not any(call[0] == "gh" for call in run.calls)
+
+
+def test_detached_head_is_refused(checkout: Path) -> None:
+    _git(checkout, "checkout", "-q", "--detach")
+    with pytest.raises(GateError, match="on 'HEAD', expected 'main'"):
+        checkout_is_clean_on(checkout, "main")
