@@ -189,6 +189,8 @@ A passing check looks like this:
 [ok] mcp:sentry — npx -y @sentry/mcp-server@latest --organization-slug=example-org
 [ok] mcp:atlassian — uvx mcp-atlassian
 [ok] sentry auth — https://us.sentry.io/api/0/organizations/example-org/issues/
+[ok] fix checkout — /srv/checkouts/example-app clean on main
+[ok] gh version — gh version 2.40.1 (2024-01-01)
 [ok] gh auth — gh auth status
 [ok] ticket statuses — all present
 [ok] claude auth — ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN

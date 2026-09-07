@@ -23,6 +23,10 @@ def _mock_sentry_auth(status: int = 200) -> None:
     respx.get(SENTRY_AUTH_URL).mock(return_value=httpx.Response(status, json=[]))
 
 
+def _modern_gh() -> str:
+    return "gh version 2.40.1 (2024-01-01)\nhttps://github.com/cli/cli/releases/tag/v2.40.1\n"
+
+
 @pytest.fixture
 def config_path(tmp_path: Path, config_dict: dict, env_tokens: None) -> Path:
     p = tmp_path / "tedsbot.yaml"
@@ -38,11 +42,12 @@ def test_all_green(config_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         return_value=httpx.Response(200, json=[{"name": "Bug", "statuses": [
             {"name": n} for n in ["To Triage", "Dev Team Review", "Approved For Fix", "In Progress", "Code Review"]]}])
     )
-    report = run_check(config_path, mcp_probe=lambda c: True, gh_probe=lambda: True)
+    report = run_check(config_path, mcp_probe=lambda c: True, gh_probe=lambda: True,
+                        gh_version_probe=_modern_gh)
     assert report.ok
     names = [r[0] for r in report.results]
     assert names == ["config", "checkout", "mcp:sentry", "mcp:atlassian", "sentry auth",
-                     "gh auth", "ticket statuses", "claude auth"]
+                     "fix checkout", "gh version", "gh auth", "ticket statuses", "claude auth"]
 
 
 @respx.mock
@@ -52,14 +57,16 @@ def test_missing_status_and_gh_fail(config_path: Path, monkeypatch: pytest.Monke
     respx.get(STATUSES_URL).mock(
         return_value=httpx.Response(200, json=[{"name": "Bug", "statuses": [{"name": "To Triage"}]}])
     )
-    report = run_check(config_path, mcp_probe=lambda c: True, gh_probe=lambda: False)
+    report = run_check(config_path, mcp_probe=lambda c: True, gh_probe=lambda: False,
+                        gh_version_probe=_modern_gh)
     assert not report.ok
     failed = {r[0]: r[2] for r in report.results if not r[1]}
     assert "gh auth" in failed and "Dev Team Review" in failed["ticket statuses"]
 
 
 def test_config_failure_short_circuits(tmp_path: Path) -> None:
-    report = run_check(tmp_path / "absent.yaml", mcp_probe=lambda c: True, gh_probe=lambda: True)
+    report = run_check(tmp_path / "absent.yaml", mcp_probe=lambda c: True, gh_probe=lambda: True,
+                        gh_version_probe=_modern_gh)
     assert not report.ok and [r[0] for r in report.results] == ["config"]
 
 
@@ -67,6 +74,7 @@ def test_cli_check_exit_code(config_path: Path, monkeypatch: pytest.MonkeyPatch,
     monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
     monkeypatch.setattr("tedsbot.commands.check._default_mcp_probe", lambda c: True)
     monkeypatch.setattr("tedsbot.commands.check._default_gh_probe", lambda: False)
+    monkeypatch.setattr("tedsbot.commands.check._default_gh_version_probe", _modern_gh)
     with respx.mock:
         _mock_sentry_auth()
         respx.get(STATUSES_URL).mock(return_value=httpx.Response(200, json=[]))
@@ -103,7 +111,8 @@ def test_statuses_check_reports_transport_error(config_path: Path, monkeypatch: 
     with respx.mock:
         _mock_sentry_auth()
         respx.get(STATUSES_URL).mock(side_effect=httpx.ConnectError("boom"))
-        report = run_check(config_path, mcp_probe=lambda c: True, gh_probe=lambda: True)
+        report = run_check(config_path, mcp_probe=lambda c: True, gh_probe=lambda: True,
+                        gh_version_probe=_modern_gh)
     names = [r[0] for r in report.results]
     statuses_result = next(r for r in report.results if r[0] == "ticket statuses")
     assert statuses_result[1] is False and "boom" in statuses_result[2]
@@ -120,7 +129,8 @@ def test_check_reports_unregistered_log_store(
     config_path.write_text(yaml.safe_dump(config_dict))
     _mock_sentry_auth()
     respx.get(STATUSES_URL).mock(return_value=httpx.Response(200, json=[]))
-    report = run_check(config_path, mcp_probe=lambda c: True, gh_probe=lambda: True)
+    report = run_check(config_path, mcp_probe=lambda c: True, gh_probe=lambda: True,
+                        gh_version_probe=_modern_gh)
     names = [r[0] for r in report.results]
     logs_row = next(r for r in report.results if r[0] == "provider:logs")
     assert logs_row[1] is False and "grafana" in logs_row[2]
@@ -134,7 +144,8 @@ def test_sentry_auth_row_passes_on_200(config_path: Path, monkeypatch: pytest.Mo
     monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
     _mock_sentry_auth()
     respx.get(STATUSES_URL).mock(return_value=httpx.Response(200, json=[]))
-    report = run_check(config_path, mcp_probe=lambda c: True, gh_probe=lambda: True)
+    report = run_check(config_path, mcp_probe=lambda c: True, gh_probe=lambda: True,
+                        gh_version_probe=_modern_gh)
     row = next(r for r in report.results if r[0] == "sentry auth")
     assert row[1] is True
 
@@ -144,7 +155,8 @@ def test_sentry_auth_row_fails_with_status(config_path: Path, monkeypatch: pytes
     monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
     _mock_sentry_auth(401)
     respx.get(STATUSES_URL).mock(return_value=httpx.Response(200, json=[]))
-    report = run_check(config_path, mcp_probe=lambda c: True, gh_probe=lambda: True)
+    report = run_check(config_path, mcp_probe=lambda c: True, gh_probe=lambda: True,
+                        gh_version_probe=_modern_gh)
     row = next(r for r in report.results if r[0] == "sentry auth")
     assert row[1] is False and "401" in row[2]
     assert not report.ok
@@ -157,7 +169,48 @@ def test_sentry_auth_probe_uses_issue_search_not_org_detail(config_path: Path, m
     monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
     route = respx.get(SENTRY_AUTH_URL).mock(return_value=httpx.Response(200, json=[]))
     respx.get(STATUSES_URL).mock(return_value=httpx.Response(200, json=[]))
-    run_check(config_path, mcp_probe=lambda c: True, gh_probe=lambda: True)
+    run_check(config_path, mcp_probe=lambda c: True, gh_probe=lambda: True,
+                        gh_version_probe=_modern_gh)
     params = route.calls[0].request.url.params
     assert params["project"] == "123" and params["limit"] == "1"
     assert params["environment"] == "production"
+
+
+@respx.mock
+def test_fix_checkout_row_reports_the_gate_that_would_refuse_a_fix_run(
+    config_path: Path, checkout: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    _mock_sentry_auth()
+    respx.get(STATUSES_URL).mock(return_value=httpx.Response(200, json=[]))
+    (checkout / "scratch.txt").write_text("x")
+    report = run_check(config_path, mcp_probe=lambda c: True, gh_probe=lambda: True,
+                       gh_version_probe=_modern_gh)
+    row = next(r for r in report.results if r[0] == "fix checkout")
+    assert row[1] is False and "uncommitted changes" in row[2]
+    assert not report.ok
+
+
+@respx.mock
+def test_gh_version_row_fails_below_the_minimum(config_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    _mock_sentry_auth()
+    respx.get(STATUSES_URL).mock(return_value=httpx.Response(200, json=[]))
+    report = run_check(config_path, mcp_probe=lambda c: True, gh_probe=lambda: True,
+                       gh_version_probe=lambda: "gh version 2.4.0 (2022-03-23)\n")
+    row = next(r for r in report.results if r[0] == "gh version")
+    assert row[1] is False and "2.4.0" in row[2] and "2.20" in row[2]
+    assert not report.ok
+
+
+@respx.mock
+def test_gh_version_row_fails_when_gh_prints_nothing_readable(
+    config_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    _mock_sentry_auth()
+    respx.get(STATUSES_URL).mock(return_value=httpx.Response(200, json=[]))
+    report = run_check(config_path, mcp_probe=lambda c: True, gh_probe=lambda: True,
+                       gh_version_probe=lambda: "")
+    row = next(r for r in report.results if r[0] == "gh version")
+    assert row[1] is False and "no version" in row[2]

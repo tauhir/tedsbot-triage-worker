@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -13,7 +14,12 @@ import httpx
 
 from tedsbot import registry
 from tedsbot.config import load_config
-from tedsbot.errors import ConfigError, ProviderError
+from tedsbot.errors import ConfigError, GateError, ProviderError
+from tedsbot.gates import checkout_is_clean_on
+
+# `gh pr checks --json` and its `bucket` field, which the CI watch reads,
+# arrived in gh 2.20.
+GH_MIN_VERSION = (2, 20)
 
 
 @dataclass
@@ -53,14 +59,35 @@ def _default_gh_probe() -> bool:
         return False
 
 
+def _default_gh_version_probe() -> str:
+    try:
+        return subprocess.run(["gh", "--version"], capture_output=True, text=True, check=False).stdout
+    except OSError as exc:
+        return f"gh --version failed: {exc}"
+
+
+def _gh_version_result(text: str) -> tuple[bool, str]:
+    """Read `gh --version` output against the minimum the CI watch needs."""
+    first = (text or "").strip().splitlines()[0] if (text or "").strip() else ""
+    match = re.search(r"gh version (\d+)\.(\d+)", first)
+    if match is None:
+        return False, f"no version in {first[:60]!r}"
+    version = (int(match.group(1)), int(match.group(2)))
+    if version < GH_MIN_VERSION:
+        return False, f"{first}, need {GH_MIN_VERSION[0]}.{GH_MIN_VERSION[1]} or newer for `gh pr checks --json`"
+    return True, first
+
+
 def run_check(
     config_path: Path,
     *,
     mcp_probe: Callable[[dict], bool] | None = None,
     gh_probe: Callable[[], bool] | None = None,
+    gh_version_probe: Callable[[], str] | None = None,
 ) -> CheckReport:
     mcp_probe = mcp_probe or _default_mcp_probe
     gh_probe = gh_probe or _default_gh_probe
+    gh_version_probe = gh_version_probe or _default_gh_version_probe
     report = CheckReport()
     try:
         cfg = load_config(config_path)
@@ -96,6 +123,15 @@ def run_check(
         ok, detail = errors.check_auth()
         report.add("sentry auth", ok, detail)
 
+    # The same gate the fix stage runs, reported here so an operator learns the
+    # checkout is unusable before a ticket is approved rather than after.
+    try:
+        checkout_is_clean_on(cfg.repo.path, cfg.repo.base_branch)
+        report.add("fix checkout", True, f"{cfg.repo.path} clean on {cfg.repo.base_branch}")
+    except GateError as exc:
+        report.add("fix checkout", False, str(exc))
+
+    report.add("gh version", *_gh_version_result(gh_version_probe()))
     report.add("gh auth", gh_probe(), "gh auth status")
 
     if (tickets := providers.get("tickets")) is not None:
