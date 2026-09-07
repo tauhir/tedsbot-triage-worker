@@ -57,7 +57,8 @@ def test_fix_spec(cfg) -> None:
     assert spec.kind == "fix" and spec.prompt_name == "fix" and spec.include_edit_tools
     assert spec.tools == FIX_TOOLS and spec.max_turns == 150
     assert spec.inputs == {"ticket_key": "APP-7", "branch": "tedsbot/APP-7", "base_branch": "main",
-                           "github_repo": "example-org/example-app", "test_command": "none"}
+                           "github_repo": "example-org/example-app", "test_command": "none",
+                           "pr_body_path": f"{cfg.repo.path}/.git/tedsbot/pr-body.md"}
 
 
 async def test_gate_refusal_notifies_and_never_runs_the_agent(cfg, temp_home: Path) -> None:

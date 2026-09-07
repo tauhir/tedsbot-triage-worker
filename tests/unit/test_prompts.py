@@ -61,7 +61,8 @@ def test_unknown_template_fails() -> None:
 
 def test_fix_prompt_substitutes_and_carries_rules() -> None:
     text = render_prompt("fix", FACTS, ticket_key="APP-7", branch="tedsbot/APP-7", base_branch="main",
-                         github_repo="example-org/example-app", test_command="uv run pytest -q", summary_path="/x")
+                         github_repo="example-org/example-app", test_command="uv run pytest -q",
+                         pr_body_path="/srv/app/.git/tedsbot/pr-body.md", summary_path="/x")
     assert "TICKET_KEY: APP-7" in text and "BRANCH: tedsbot/APP-7" in text and "example-org/example-app" in text
     assert "uv run pytest -q" in text and "customfield_10073" in text and "Code Review" in text
     assert "Draft only" in text and "never merge" in text and "submit_summary" in text
@@ -70,8 +71,18 @@ def test_fix_prompt_substitutes_and_carries_rules() -> None:
     assert "record the summary with status `already open`" in text
 
 
+def test_fix_prompt_puts_the_pr_body_in_a_file_not_the_command_line() -> None:
+    """A PR body inline in the shell command makes every backtick in it a substitution."""
+    text = render_prompt("fix", FACTS, ticket_key="APP-7", branch="tedsbot/APP-7", base_branch="main",
+                         github_repo="example-org/example-app", test_command="none",
+                         pr_body_path="/srv/app/.git/tedsbot/pr-body.md", summary_path="/x")
+    assert "--body-file /srv/app/.git/tedsbot/pr-body.md" in text
+    assert '--body "' not in text
+
+
 def test_fix_prompt_without_test_command_says_tests_cannot_run() -> None:
     text = render_prompt("fix", FACTS, ticket_key="APP-7", branch="b", base_branch="main",
-                         github_repo="o/r", test_command="none", summary_path="/x")
+                         github_repo="o/r", test_command="none",
+                         pr_body_path="/srv/app/.git/tedsbot/pr-body.md", summary_path="/x")
     assert "cannot run the tests" in text
     assert "\n\n7. **Commit**" not in text

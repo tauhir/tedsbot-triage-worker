@@ -35,11 +35,22 @@ def _notifier(cfg: Config) -> Any:
     return registry.get_notifier(cfg.notify)
 
 
+def pr_body_path(cfg: Config) -> Path:
+    """Where the agent writes the PR body.
+
+    A fix run may write only inside the checkout, and `git status` ignores
+    `.git/`, so a scratch file under it is both writable and invisible to the
+    commit the agent makes.
+    """
+    return cfg.repo.path / ".git" / "tedsbot" / "pr-body.md"
+
+
 def build_fix_spec(cfg: Config, key: str) -> RunSpec:
     return RunSpec(
         kind="fix", prompt_name="fix",
         inputs={"ticket_key": key, "branch": f"{cfg.fix.branch_prefix}{key}", "base_branch": cfg.repo.base_branch,
-                "github_repo": cfg.repo.github, "test_command": cfg.fix.test_command or "none"},
+                "github_repo": cfg.repo.github, "test_command": cfg.fix.test_command or "none",
+                "pr_body_path": str(pr_body_path(cfg))},
         max_turns=cfg.agent.max_turns.fix, tools=list(FIX_TOOLS), include_edit_tools=True, run_id=key,
     )
 
@@ -78,6 +89,7 @@ async def fix(cfg: Config, key: str, *, run_fn: RunFn | None = None, home: Path 
         _post(notifier, summary, run_dir, cfg)
         return summary, run_dir
     try:
+        pr_body_path(cfg).parent.mkdir(parents=True, exist_ok=True)
         summary = await (run_fn or _run)(cfg, build_fix_spec(cfg, key), run_dir)
         if summary.ok and summary.status == "draft PR opened" and summary.pr_url and cfg.fix.ci_wait_minutes > 0:
             verdict: CiVerdict = (watch_fn or _watch)(summary.pr_url, cfg.fix.ci_wait_minutes, cfg.fix.ci_poll_seconds)
