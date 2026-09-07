@@ -61,6 +61,17 @@ def _dispatch(ns: argparse.Namespace) -> int:
             print(f"config error: {exc}", file=sys.stderr)
             return 2
         return main_triage(cfg, ns.triage_kind, ns.target)
+    if ns.command == "fix":
+        from tedsbot.commands.fix import main_fix
+        from tedsbot.config import load_config
+        from tedsbot.errors import ConfigError
+
+        try:
+            cfg = load_config(config_path)
+        except ConfigError as exc:
+            print(f"config error: {exc}", file=sys.stderr)
+            return 2
+        return main_fix(cfg, ns.target)
     # Remaining command modules are wired in later tasks; unknown commands report clearly.
     print(f"{ns.command}: not implemented yet", file=sys.stderr)
     return 1
