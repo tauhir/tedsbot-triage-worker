@@ -54,6 +54,43 @@ async def test_triage_creates_run_dir_and_returns_summary(cfg, temp_home: Path) 
 
 
 async def test_triage_warns_when_ticket_moved_past_target(cfg, temp_home: Path) -> None:
+    class N:
+        def __init__(self) -> None:
+            self.posts: list[str] = []
+
+        def post(self, t): self.posts.append(t)
+
+    class T:
+        def status_of(self, key): return "Done"
+
+    def make_fake_run(outcome: str):
+        async def fake_run(c, spec, run_dir):
+            return RunSummary(kind="triage_sentry", ticket="APP-1", outcome=outcome, headline="ok", tldr="t", ok=True)
+        return fake_run
+
+    for outcome in ("new_ticket", "regression"):
+        notifier = N()
+        await triage(cfg, build_sentry_spec(cfg, "APP-1"), run_fn=make_fake_run(outcome), tickets=T(), notifier=notifier)
+        assert notifier.posts and "is in 'Done' after triage" in notifier.posts[0]
+
+
+async def test_triage_does_not_re_read_for_duplicates(cfg, temp_home: Path) -> None:
+    posts = []
+
+    class N:
+        def post(self, t): posts.append(t)
+
+    class T:
+        def status_of(self, key): raise AssertionError("must not be called")
+
+    async def fake_run(c, spec, run_dir):
+        return RunSummary(kind="triage_sentry", ticket="APP-1", outcome="duplicate", headline="h", tldr="t", ok=True)
+
+    await triage(cfg, build_sentry_spec(cfg, "APP-1"), run_fn=fake_run, tickets=T(), notifier=N())
+    assert posts == []
+
+
+async def test_triage_does_not_re_read_for_analysed_existing(cfg, temp_home: Path) -> None:
     posts = []
 
     class N:
@@ -63,10 +100,10 @@ async def test_triage_warns_when_ticket_moved_past_target(cfg, temp_home: Path) 
         def status_of(self, key): return "Done"
 
     async def fake_run(c, spec, run_dir):
-        return RunSummary(kind="triage_sentry", ticket="APP-1", headline="ok", tldr="t", ok=True)
+        return RunSummary(kind="triage_sentry", ticket="APP-1", outcome="analysed_existing", headline="h", tldr="t", ok=True)
 
     await triage(cfg, build_sentry_spec(cfg, "APP-1"), run_fn=fake_run, tickets=T(), notifier=N())
-    assert posts and "is in 'Done' after triage" in posts[0]
+    assert posts == []
 
 
 async def test_triage_silent_when_ticket_in_target(cfg, temp_home: Path) -> None:
@@ -79,7 +116,7 @@ async def test_triage_silent_when_ticket_in_target(cfg, temp_home: Path) -> None
         def status_of(self, key): return "Dev Team Review"
 
     async def fake_run(c, spec, run_dir):
-        return RunSummary(kind="triage_sentry", ticket="APP-1", headline="ok", tldr="t", ok=True)
+        return RunSummary(kind="triage_sentry", ticket="APP-1", outcome="new_ticket", headline="ok", tldr="t", ok=True)
 
     await triage(cfg, build_sentry_spec(cfg, "APP-1"), run_fn=fake_run, tickets=T(), notifier=N())
     assert posts == []
@@ -96,7 +133,7 @@ async def test_triage_status_reread_survives_provider_error(cfg, temp_home: Path
             raise ProviderError("jira down")
 
     async def fake_run(c, spec, run_dir):
-        return RunSummary(kind="triage_sentry", ticket="APP-1", headline="ok", tldr="t", ok=True)
+        return RunSummary(kind="triage_sentry", ticket="APP-1", outcome="new_ticket", headline="ok", tldr="t", ok=True)
 
     with caplog.at_level(logging.WARNING):
         summary, _run_dir = await triage(cfg, build_sentry_spec(cfg, "APP-1"), run_fn=fake_run, tickets=T(), notifier=N())
@@ -115,7 +152,7 @@ async def test_triage_warning_post_survives_provider_error(cfg, temp_home: Path,
             return "Done"
 
     async def fake_run(c, spec, run_dir):
-        return RunSummary(kind="triage_sentry", ticket="APP-1", headline="ok", tldr="t", ok=True)
+        return RunSummary(kind="triage_sentry", ticket="APP-1", outcome="regression", headline="ok", tldr="t", ok=True)
 
     with caplog.at_level(logging.WARNING):
         summary, _run_dir = await triage(cfg, build_sentry_spec(cfg, "APP-1"), run_fn=fake_run, tickets=T(), notifier=N())

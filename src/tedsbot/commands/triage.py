@@ -19,6 +19,11 @@ log = logging.getLogger(__name__)
 RunFn = Callable[[Config, RunSpec, Path], Awaitable[RunSummary]]
 _run: RunFn = runner.run
 
+# Outcomes where the agent itself just created and transitioned the ticket; the
+# others (duplicate, not_a_bug, analysed_existing, insufficient_repro) leave an
+# existing ticket's status alone by design, so a re-read there would be a false positive.
+RE_READ_OUTCOMES = ("new_ticket", "regression")
+
 
 def _ticketing(cfg: Config) -> Any:
     return registry.get_ticketing(cfg.tickets)
@@ -44,7 +49,7 @@ async def triage(cfg: Config, spec: RunSpec, *, run_fn: RunFn | None = None, hom
                  tickets: Any = None, notifier: Any = None) -> tuple[RunSummary, Path]:
     run_dir = new_run_dir(spec.kind, spec.run_id, home)
     summary = await (run_fn or _run)(cfg, spec, run_dir)
-    if summary.ok and summary.ticket:
+    if summary.ok and summary.ticket and summary.outcome in RE_READ_OUTCOMES:
         try:
             status = (tickets or _ticketing(cfg)).status_of(summary.ticket)
         except ProviderError as exc:
