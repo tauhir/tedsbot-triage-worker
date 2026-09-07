@@ -463,3 +463,40 @@ Run with `uv run pytest -n auto`.
    call the CLI, poller script retired.
 
 Version one is milestones one and two.
+
+## Addendum 2026-09-07: fix stage decisions (milestone 2a)
+
+Decisions by Tauhir on 2026-09-07, refining the fix stage above:
+
+1. **Own clone, own branch.** The worker operates on a checkout dedicated to
+   it, never a developer's working copy. It creates `<fix.branch_prefix><KEY>`
+   from `repo.base_branch`, commits, pushes, and opens a draft PR. The gates
+   (clean checkout on the base branch, ticket in `fix_approved`, no open PR
+   for the branch) run in Python before the agent starts.
+2. **GitHub identity.** `GH_TOKEN` from the environment (the TEDSBOT PAT for
+   now), passed through to the agent process; `gh` authenticates with it. A
+   GitHub App is a later refinement.
+3. **Tests.** `fix.test_command` (optional) names the command the agent may
+   run to test its change; when set, the agent runs it and reports the real
+   result, and Bash is additionally allowed for that command prefix. When
+   unset, the agent writes tests but must say it could not run them.
+   After the PR opens, if `fix.ci_wait_minutes > 0` Python polls
+   `gh pr checks` until every check completes or the wait expires. Red CI
+   hands the ticket back: a `[tedsbot]` comment on the ticket naming the
+   failing checks, a second Slack message, and the run summary status
+   `CI red, handed back`. Green CI posts a second Slack message with status
+   `CI green`. The ticket stays in `code_review` either way; a human decides.
+4. **End-to-end fixture.** The worker's own repository is the fix target for
+   e2e runs: a sandbox ticket in the approved status describes a planted
+   bug; the test asserts a draft PR opened and then closes it and deletes
+   the branch.
+
+Fix-run summary `status` values: `draft PR opened`, `blocked`,
+`already open`, `gate refused`, `CI green`, `CI red, handed back`.
+`outcome` is a triage concept and is null on fix runs. The Slack message
+for a fix run carries a status-derived headline, the PR link, and the
+reader's next step (review the PR; merge and QA stay human).
+
+Also in milestone 2a: the post-triage status re-read (Gates → Triage) is
+implemented; Python re-reads the ticket status after a triage run and warns
+in Slack if it is outside `intake`/`triage_target`.
