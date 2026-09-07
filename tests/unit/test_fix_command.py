@@ -173,3 +173,18 @@ async def test_gate_provider_error_is_reported_not_raised(cfg, temp_home: Path) 
     assert "gate could not be evaluated" in summary.headline and "jira 503" in summary.headline
     assert notifier.posts and "precondition failed" in notifier.posts[0]
     assert (run_dir / "summary.resolved.json").exists()
+
+
+async def test_failed_slack_post_is_logged_not_swallowed_silently(cfg, temp_home: Path, caplog) -> None:
+    class DownNotifier(FakeNotifier):
+        def post(self, text: str) -> None:
+            raise ProviderError("slack 500")
+
+    def gates(c, status_of, key, branch):
+        raise GateError("checkout has uncommitted changes")
+
+    with caplog.at_level(logging.ERROR, logger="tedsbot.commands.fix"):
+        summary, _ = await fix(cfg, "APP-7", run_fn=_draft(), gates_fn=gates, restore_fn=lambda p, b: None,
+                               tickets=FakeTickets(), notifier=DownNotifier())
+    assert summary.status == "gate refused"
+    assert any("slack 500" in record.getMessage() for record in caplog.records)

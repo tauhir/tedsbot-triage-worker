@@ -58,8 +58,10 @@ def build_fix_spec(cfg: Config, key: str) -> RunSpec:
 def _post_text(notifier: Any, text: str) -> None:
     try:
         notifier.post(text)
-    except ProviderError:
-        pass
+    except ProviderError as exc:
+        # Slack being down must not lose the run, but a swallowed post is the
+        # reason a result nobody saw looks like a run that never happened.
+        log.error("notification failed: %s", exc)
 
 
 def _post(notifier: Any, summary: RunSummary, run_dir: Path, cfg: Config) -> None:

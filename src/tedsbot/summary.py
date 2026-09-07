@@ -178,7 +178,8 @@ def slack_line(s: RunSummary, run_dir: Path, approve_status: str = "the approval
     # (a crashed run, possibly with a status the agent had already submitted
     # before the crash) keeps the generic failure line instead.
     if not s.ok and not (s.kind == "fix" and s.status == "gate refused"):
-        lines = [f"*⚠️ Triage run failed: {s.kind.replace('_', ' ')} {s.ticket or '?'}*", _plain(s.headline)]
+        stage = "Fix" if s.kind == "fix" else "Triage"
+        lines = [f"*⚠️ {stage} run failed: {s.kind.replace('_', ' ')} {s.ticket or '?'}*", _plain(s.headline)]
         if s.ticket_url:
             lines.append(s.ticket_url)
         lines.append(f"Run dir: {run_dir}")

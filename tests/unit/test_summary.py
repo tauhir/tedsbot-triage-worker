@@ -161,4 +161,4 @@ def test_crashed_fix_run_with_leftover_status_renders_as_failure(tmp_path: Path)
     s = RunSummary(kind="fix", ticket="APP-7", status="draft PR opened", pr_url="https://g/pull/1",
                    headline="h (run failed: boom)", tldr="t", ok=False)
     line = slack_line(s, tmp_path)
-    assert line.splitlines()[0].startswith("*⚠️ Triage run failed")
+    assert line.splitlines()[0].startswith("*⚠️ Fix run failed")
