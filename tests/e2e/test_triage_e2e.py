@@ -33,9 +33,9 @@ def _snapshot() -> set[Path]:
 # at run start, before the summary is written. This assumes the two e2e
 # tests never launch the same kind against the same target concurrently --
 # they don't, since they use different subcommands (sentry vs ticket).
-def _new_run_dir(before: set[Path]) -> Path:
-    new = set(_runs_dir().iterdir()) - before
-    assert len(new) == 1, f"expected exactly one new run dir, found {sorted(new)}"
+def _new_run_dir(before: set[Path], kind: str) -> Path:
+    new = {d for d in set(_runs_dir().iterdir()) - before if f"-{kind}-" in d.name}
+    assert len(new) == 1, f"expected exactly one new {kind} run dir, found {sorted(new)}"
     return new.pop()
 
 
@@ -46,7 +46,7 @@ def test_triage_sentry_lands_ticket_and_summary() -> None:
     proc = subprocess.run(["uv", "run", "tedsbot", "-c", config, "triage", "sentry", issue],
                           capture_output=True, text=True, check=False)
     assert proc.returncode == 0, proc.stdout + proc.stderr
-    run_dir = _new_run_dir(before)
+    run_dir = _new_run_dir(before, "triage_sentry")
     summary = json.loads((run_dir / "summary.resolved.json").read_text())
     assert summary["ok"] is True
     assert summary["recommendation"] in ("🟢", "🟡", "⚪", "🔴")
@@ -60,6 +60,6 @@ def test_triage_ticket_comments_and_summary() -> None:
     proc = subprocess.run(["uv", "run", "tedsbot", "-c", config, "triage", "ticket", key],
                           capture_output=True, text=True, check=False)
     assert proc.returncode == 0, proc.stdout + proc.stderr
-    run_dir = _new_run_dir(before)
+    run_dir = _new_run_dir(before, "triage_ticket")
     summary = json.loads((run_dir / "summary.resolved.json").read_text())
     assert summary["ok"] is True and summary["ticket"] == key

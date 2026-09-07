@@ -49,9 +49,15 @@ def _snapshot() -> set[Path]:
     return set(runs.iterdir()) if runs.is_dir() else set()
 
 
-def _new_run_dir(before: set[Path]) -> Path:
-    new = set(_runs_dir().iterdir()) - before
-    assert len(new) == 1, f"expected exactly one new run dir, found {sorted(new)}"
+# Diffing against a pre-launch snapshot (rather than taking the newest entry)
+# keeps each test scoped to the run dir it launched, since under -n auto the
+# e2e tests can run concurrently and new_run_dir() creates the directory at
+# run start, before the summary is written. Filtering the diff by kind and
+# target makes that scoping explicit rather than relying on which other e2e
+# tests happen to exist.
+def _new_run_dir(before: set[Path], key: str) -> Path:
+    new = {d for d in set(_runs_dir().iterdir()) - before if d.name.endswith(f"-fix-{key}")}
+    assert len(new) == 1, f"expected exactly one new fix run dir for {key}, found {sorted(new)}"
     return new.pop()
 
 
@@ -64,7 +70,7 @@ def test_fix_opens_draft_pr_and_summary() -> None:
     pr_url = None
     try:
         assert proc.returncode == 0, proc.stdout + proc.stderr
-        run_dir = _new_run_dir(before)
+        run_dir = _new_run_dir(before, key)
         summary = json.loads((run_dir / "summary.resolved.json").read_text())
         assert summary["status"] in ("draft PR opened", "CI green", "CI red, handed back")
         pr_url = summary.get("pr_url")
