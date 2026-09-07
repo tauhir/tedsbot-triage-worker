@@ -28,11 +28,13 @@ QA gate are.
 4. **Branch**: `git checkout -b {{ branch }}` from the current `{{ base_branch }}`.
 5. **Implement** the smallest change that resolves the root cause, in the surrounding style. No refactors, no unrelated changes.
 6. **Tests.** Write tests that demonstrate the fix, following the project's conventions.
-{% if test_command != "none" %}   Run `{{ test_command }}` and read the whole result. Fix what your change broke. Report the real outcome in the PR body and the summary: the exact command and its summary line.
-{% else %}   You cannot run the tests here; do not claim they pass. Say in the PR body that CI validates them.
-{% endif %}
+{% if test_command != "none" -%}
+   Run `{{ test_command }}` and read the whole result. Fix what your change broke. Report the real outcome in the PR body and the summary: the exact command and its summary line.
+{% else -%}
+   You cannot run the tests here; do not claim they pass. Say in the PR body that CI validates them.
+{% endif -%}
 7. **Commit** with a clear message ending in the trailers `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>` and `Ticket: {{ ticket_key }}`. **Push** the branch: `git push -u origin {{ branch }}`.
-8. **Open a draft PR** against `{{ base_branch }}`: `gh pr create --repo {{ github_repo }} --draft --base {{ base_branch }} --head {{ branch }} --title "{{ ticket_key }}: <short summary>" --body "<body>"`. The body states what changed and why, the root cause, the test outcome exactly as observed, that this is an auto-generated draft for review, and the line `Ticket: {{ ticket_key }}`. Note the PR URL the command prints.
+8. **Open a draft PR** against `{{ base_branch }}`: `gh pr create --repo {{ github_repo }} --draft --base {{ base_branch }} --head {{ branch }} --title "{{ ticket_key }}: <short summary>" --body "<body>"`. The body states what changed and why, the root cause, the test outcome exactly as observed, that this is an auto-generated draft for review, and the line `Ticket: {{ ticket_key }}`. Note the PR URL the command prints. If `gh pr create` fails because a pull request already exists for `{{ branch }}`, do not create another: run `gh pr list --repo {{ github_repo }} --head {{ branch }} --state open --json url` to get its URL, use that URL for the remaining steps, and record the summary with status `already open`. Any other `gh pr create` failure: stop, comment the exact error on the ticket (first line `[tedsbot]`), and record status `blocked`.
 9. **QA Instructions**: populate `{{ qa_instructions_field }}` (ADF) with numbered verification steps a human QA can follow: role, navigation, action, expected result.
 10. **Comment** the PR link on the ticket: one plain sentence plus the URL, first line `[tedsbot]`.
 11. **Transition** the ticket to **{{ status_code_review }}** (match on the target status name; if no transition reaches it, leave the ticket in progress and say so in the summary).
@@ -42,7 +44,7 @@ QA gate are.
 {"kind": "fix", "ticket": "{{ ticket_key }}", "ticket_url": "{{ jira_url }}/browse/{{ ticket_key }}", "status": "draft PR opened", "pr_url": "https://github.com/{{ github_repo }}/pull/NNN", "title": "the ticket summary", "headline": "one technical line: what changed and where, and the test outcome", "tldr": "at most two plain sentences for non-engineers: what users get and that a PR is ready for review", "recommendation": null, "outcome": null, "ok": true}
 ```
 
-`status` is one of `draft PR opened`, `blocked` (decision gate), `already open` (an open PR for the branch already existed). Write `tldr` and `headline` as plain sentences with no em-dashes and no semicolons.
+`status` is one of `draft PR opened`, `blocked` (decision gate), `already open` (`gh pr create` failed because a pull request already existed for `{{ branch }}`, exactly the case in step 8). Write `tldr` and `headline` as plain sentences with no em-dashes and no semicolons.
 
 ## Rules
 

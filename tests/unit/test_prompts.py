@@ -66,9 +66,12 @@ def test_fix_prompt_substitutes_and_carries_rules() -> None:
     assert "uv run pytest -q" in text and "customfield_10073" in text and "Code Review" in text
     assert "Draft only" in text and "never merge" in text and "submit_summary" in text
     assert '"status": "draft PR opened"' in text and "no em-dashes" in text
+    assert "gh pr list --repo example-org/example-app --head tedsbot/APP-7" in text
+    assert "record the summary with status `already open`" in text
 
 
 def test_fix_prompt_without_test_command_says_tests_cannot_run() -> None:
     text = render_prompt("fix", FACTS, ticket_key="APP-7", branch="b", base_branch="main",
                          github_repo="o/r", test_command="none", summary_path="/x")
     assert "cannot run the tests" in text
+    assert "\n\n7. **Commit**" not in text
