@@ -33,7 +33,19 @@ TRIAGE_TOOLS = [
     "Read", "Grep", "Glob",
     "Bash(git log:*)", "Bash(git show:*)", "Bash(git blame:*)", "Bash(git diff:*)",
 ]
-FIX_TOOLS = ["Read", "Edit", "Write", "Grep", "Glob", "Bash(git:*)", "Bash(gh:*)"]
+# Edit and Write are absent on purpose: build_options adds them as path rules
+# scoped to the checkout, so a fix run cannot write anywhere else. gh is
+# narrowed to the three pull-request verbs the fix procedure actually uses.
+FIX_TOOLS = [
+    "Read", "Grep", "Glob", "Bash(git:*)",
+    "Bash(gh pr create:*)", "Bash(gh pr list:*)", "Bash(gh pr view:*)",
+]
+# Denied on every run, triage included. Each one is an action only a human
+# takes: rewriting pushed history, or moving a pull request past draft.
+DISALLOWED_TOOLS = [
+    "Bash(git push --force:*)", "Bash(git push -f:*)", "Bash(git push --force-with-lease:*)",
+    "Bash(gh pr merge:*)", "Bash(gh pr ready:*)", "Bash(gh api:*)", "Bash(gh auth:*)",
+]
 AUTH_ENV = ("ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN", "GH_TOKEN")
 
 
@@ -103,8 +115,13 @@ def build_options(cfg: Config, spec: RunSpec, run_dir: Path) -> tuple[ClaudeAgen
 
     mcp_servers: dict[str, Any] = {}
     allowed = list(spec.tools)
-    if spec.kind == "fix" and cfg.fix.test_command:
-        allowed.append(f"Bash({cfg.fix.test_command}:*)")
+    if spec.kind == "fix":
+        # Path rules rather than bare Edit/Write tools: the SDK honours a glob
+        # under cwd, so the checkout is the only place a fix run can write.
+        allowed.append(f"Edit(//{cfg.repo.path}/**)")
+        allowed.append(f"Write(//{cfg.repo.path}/**)")
+        if cfg.fix.test_command:
+            allowed.append(f"Bash({cfg.fix.test_command}:*)")
     env = {k: os.environ[k] for k in AUTH_ENV if k in os.environ}
     for server in [p.mcp_server() for p in providers] + [notifier.sdk_server()]:
         config = server.config
@@ -116,15 +133,21 @@ def build_options(cfg: Config, spec: RunSpec, run_dir: Path) -> tuple[ClaudeAgen
             config = {k: v for k, v in config.items() if k != "env"}
         mcp_servers[server.name] = config
         allowed.extend(server.allowed_tools)
-    # The agent has no file-write permission at all: the summary arrives through
-    # the in-process submit_summary tool, which validates it and writes the file.
+    # Triage runs have no file-write permission; fix runs may write only inside
+    # the checkout. Neither can write the run directory, so the summary always
+    # arrives through the in-process submit_summary tool, which validates it
+    # and writes the file.
     run_server = build_summary_server(run_dir)
     mcp_servers[run_server.name] = run_server.config
     allowed.extend(run_server.allowed_tools)
 
+    writes = (
+        f"You may write only inside the checkout at `{cfg.repo.path}`"
+        if spec.kind == "fix" else "You have no file-write permission"
+    )
     append = (
         f"{knowledge.text}\n\n## Run directory\n\n"
-        f"Your run directory is `{run_dir}`. You have no file-write permission; record the run "
+        f"Your run directory is `{run_dir}`. {writes}; record the run "
         f"summary by calling the `submit_summary` tool, which writes `{summary_path}` for you."
     )
     options = ClaudeAgentOptions(
@@ -141,6 +164,7 @@ def build_options(cfg: Config, spec: RunSpec, run_dir: Path) -> tuple[ClaudeAgen
         max_turns=spec.max_turns,
         mcp_servers=mcp_servers,
         allowed_tools=allowed,
+        disallowed_tools=list(DISALLOWED_TOOLS),
         env=env,
     )
     return options, prompt

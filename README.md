@@ -359,10 +359,30 @@ The rule that triage never moves a ticket past `tickets.statuses.triage_target` 
 ### Security notes
 The agent subprocess inherits the worker process's full environment — the
 SDK merges its own env over `os.environ`, and the worker does not isolate
-it. The mitigation is the tool allowlist: it restricts Bash to four
-read-only git subcommands (log, show, blame, diff) during triage, and to
-git and gh during fix. Run the worker as a dedicated user holding only
-the secrets it needs, not a shared or broadly-privileged account.
+it. The mitigation is the tool allowlist. Run the worker as a dedicated
+user holding only the secrets it needs, not a shared or
+broadly-privileged account.
+
+What the allowlist enforces structurally, whatever the agent decides:
+
+- Triage restricts Bash to four read-only git subcommands (log, show,
+  blame, diff) and grants no file-write permission at all.
+- A fix run's writes are path rules scoped to `repo.path`, so it can edit
+  and create files inside the checkout and nowhere else on the host.
+- A fix run's `gh` access is three verbs: `gh pr create`, `gh pr list`,
+  `gh pr view`. Creating, listing and viewing pull requests, nothing more.
+- Every run, triage included, denies `gh pr merge`, `gh pr ready`,
+  `gh api`, `gh auth`, and force-pushing in its three spellings
+  (`--force`, `-f`, `--force-with-lease`).
+
+Everything else is prompt-only: within those bounds the agent decides what
+to change, what to commit, what the PR says, and which ticket transitions
+to make. The prompt tells it to open draft PRs and stop at the code-review
+status; nothing in the tool layer would stop it choosing otherwise, so
+back the prompt with the two controls GitHub gives you: branch protection
+on the base branch (require a review, forbid force-pushes), and a
+fine-grained personal access token scoped to that one repository with only
+`contents: write` and `pull requests: write`.
 
 MCP server credentials are handed to the agent process through its
 environment rather than its command line, so a token never appears in

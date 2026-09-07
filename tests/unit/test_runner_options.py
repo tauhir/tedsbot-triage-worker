@@ -111,14 +111,33 @@ def test_new_run_dir_strips_query_and_handles_empty(temp_home: Path) -> None:
 def test_fix_options_allow_edit_tools_test_command_and_gh_token(cfg, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GH_TOKEN", "ghp_x")
     cfg.fix.test_command = "uv run pytest -q"
-    spec = RunSpec(kind="fix", prompt_name="fix", inputs={"ticket_key": "APP-7", "branch": "tedsbot/APP-7", "base_branch": "main",
-                   "github_repo": "example-org/example-app", "test_command": "uv run pytest -q"},
-                   max_turns=150, tools=list(FIX_TOOLS), include_edit_tools=True, run_id="APP-7")
+    spec = _fix_spec()
+    spec.inputs["test_command"] = "uv run pytest -q"
     options, prompt = build_options(cfg, spec, tmp_path)
-    assert "Edit" in options.allowed_tools and "Bash(gh:*)" in options.allowed_tools
+    assert f"Edit(//{cfg.repo.path}/**)" in options.allowed_tools
     assert "Bash(uv run pytest -q:*)" in options.allowed_tools
     assert options.env["GH_TOKEN"] == "ghp_x"
     assert "BRANCH: tedsbot/APP-7" in prompt
+
+
+def test_fix_options_confine_writes_to_checkout(cfg, tmp_path: Path) -> None:
+    """Writes are a path rule, not a bare tool: nothing outside the checkout is writable."""
+    options, _ = build_options(cfg, _fix_spec(), tmp_path)
+    assert f"Edit(//{cfg.repo.path}/**)" in options.allowed_tools
+    assert f"Write(//{cfg.repo.path}/**)" in options.allowed_tools
+    assert "Edit" not in options.allowed_tools and "Write" not in options.allowed_tools
+    assert "Bash(gh:*)" not in options.allowed_tools
+    for rule in ("Bash(gh pr create:*)", "Bash(gh pr list:*)", "Bash(gh pr view:*)"):
+        assert rule in options.allowed_tools
+    assert "Bash(gh pr merge:*)" in options.disallowed_tools
+    assert "Bash(git push --force:*)" in options.disallowed_tools
+
+
+def test_triage_options_carry_the_denials_and_no_write_globs(cfg, tmp_path: Path) -> None:
+    options, _ = build_options(cfg, _spec(), tmp_path)
+    assert "Bash(gh pr merge:*)" in options.disallowed_tools
+    assert "Bash(gh api:*)" in options.disallowed_tools
+    assert not any(t.startswith(("Edit(", "Write(")) for t in options.allowed_tools)
 
 
 def test_fix_runs_get_the_ticketing_provider_only(cfg, tmp_path: Path) -> None:

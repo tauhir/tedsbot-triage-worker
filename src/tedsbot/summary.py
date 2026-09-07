@@ -242,9 +242,10 @@ class SummaryServer(McpServer):
 def build_summary_server(run_dir: Path) -> SummaryServer:
     """Build the in-process tool the agent calls to record its run summary.
 
-    The agent has no file-write permission; this tool validates the payload
-    against RunSummary, writes <run_dir>/summary.json, and returns validation
-    errors to the agent so it can correct and resubmit.
+    Triage runs have no file-write permission; fix runs may write only inside
+    the checkout. Neither can write the run directory, so this tool validates
+    the payload against RunSummary, writes <run_dir>/summary.json, and returns
+    validation errors to the agent so it can correct and resubmit.
     """
     target = run_dir / "summary.json"
 
